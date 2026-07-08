@@ -10,6 +10,12 @@ from app.services.user_service import UserService
 
 from app.api.deps import get_current_user
 from app.models.user import User
+from app.schemas.user import (
+    LoginRequest,
+    RefreshTokenRequest,
+    UserCreate,
+    UserResponse,
+)
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -65,3 +71,26 @@ async def token(
 
     token_data = await service.login(payload)
     return token_data
+
+@router.post("/refresh")
+async def refresh(
+    payload: RefreshTokenRequest,
+    service: UserService = Depends(get_user_service),
+):
+    token = await service.refresh_access_token(payload)
+
+    return success_response(
+        data=token,
+        message="Access token refreshed successfully.",
+    )
+@router.post("/logout")
+async def logout(
+    payload: RefreshTokenRequest,
+    service: UserService = Depends(get_user_service),
+):
+    result = await service.logout(payload)
+
+    return success_response(
+        data=result,
+        message="Logout successful.",
+    )
