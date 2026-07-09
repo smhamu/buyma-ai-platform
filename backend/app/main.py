@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from app.api.v1.auth import router as auth_router
 from app.api.v1.products import router as products_router
 from app.api.v1.documents import router as documents_router
+from app.api.v1.document_chunks import router as document_chunks_router
 from app.common.exceptions import AppException
 from app.core.logging import setup_logging, logger
 from app.core.config import settings
@@ -52,3 +53,4 @@ def get_env():
 app.include_router(auth_router)
 app.include_router(products_router)
 app.include_router(documents_router)
+app.include_router(document_chunks_router)
