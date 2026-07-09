@@ -11,6 +11,8 @@ from app.models.user import User
 from app.models.refresh_token import RefreshToken
 from app.models.document import Document
 from app.models.document_chunk import DocumentChunk
+from app.models.embedding_provider import EmbeddingProvider
+from app.models.embedding_model import EmbeddingModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

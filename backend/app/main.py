@@ -8,6 +8,8 @@ from app.api.v1.document_chunks import router as document_chunks_router
 from app.common.exceptions import AppException
 from app.core.logging import setup_logging, logger
 from app.core.config import settings
+from app.api.v1.embedding_models import router as embedding_models_router
+from app.api.v1.embedding_providers import router as embedding_providers_router
 
 
 setup_logging()
@@ -54,3 +56,5 @@ app.include_router(auth_router)
 app.include_router(products_router)
 app.include_router(documents_router)
 app.include_router(document_chunks_router)
+app.include_router(embedding_providers_router)
+app.include_router(embedding_models_router)
