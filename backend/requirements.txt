@@ -14,3 +14,4 @@ email-validator
 passlib[bcrypt]
 python-multipart
 pgvector
+openai

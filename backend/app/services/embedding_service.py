@@ -41,8 +41,11 @@ class EmbeddingService:
 
         provider_code = embedding_model.provider.provider_code
 
-        provider = EmbeddingProviderFactory.create(provider_code)
-
+        provider = EmbeddingProviderFactory.create(
+            provider_code=provider_code,
+            model_name=embedding_model.model_name,
+        )
+        
         vector = await provider.generate_embedding(
             text=chunk.content,
             dimension=embedding_model.dimension,
