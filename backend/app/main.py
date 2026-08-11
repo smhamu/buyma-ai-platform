@@ -16,6 +16,7 @@ from app.api.v1.vector_search import router as vector_search_router
 from app.api.v1.retriever import router as retriever_router
 from app.api.v1.prompt_builder import router as prompt_builder_router
 from app.api.v1.chat_test import router as chat_test_router
+from app.api.v1.rag import router as rag_router
 
 
 setup_logging()
@@ -70,3 +71,4 @@ app.include_router(vector_search_router)
 app.include_router(retriever_router)
 app.include_router(prompt_builder_router)
 app.include_router(chat_test_router)
+app.include_router(rag_router)

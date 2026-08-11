@@ -28,6 +28,7 @@ class PromptBuilderService:
             query=payload.query,
             context=retrieved.context,
             messages=messages,
+            chunks=retrieved.chunks,
         )
 
     @staticmethod

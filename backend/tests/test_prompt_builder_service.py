@@ -12,7 +12,10 @@ class PromptBuilderServiceTestCase(unittest.IsolatedAsyncioTestCase):
         model_id = uuid4()
         retriever_service = SimpleNamespace(
             retrieve=AsyncMock(
-                return_value=SimpleNamespace(context="[Context 1]\nBUYMA rule")
+                return_value=SimpleNamespace(
+                    context="[Context 1]\nBUYMA rule",
+                    chunks=[],
+                )
             )
         )
         service = PromptBuilderService(retriever_service=retriever_service)
@@ -29,13 +32,16 @@ class PromptBuilderServiceTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(retriever_payload.embedding_model_id, model_id)
         self.assertEqual(retriever_payload.top_k, 3)
         self.assertEqual(result.context, "[Context 1]\nBUYMA rule")
+        self.assertEqual(result.chunks, [])
         self.assertEqual([message.role for message in result.messages], ["system", "user"])
         self.assertIn("[Context 1]\nBUYMA rule", result.messages[1].content)
         self.assertIn(payload.query, result.messages[1].content)
 
     async def test_build_uses_fallback_text_when_context_is_empty(self):
         retriever_service = SimpleNamespace(
-            retrieve=AsyncMock(return_value=SimpleNamespace(context=""))
+            retrieve=AsyncMock(
+                return_value=SimpleNamespace(context="", chunks=[])
+            )
         )
         service = PromptBuilderService(retriever_service=retriever_service)
 

@@ -2,6 +2,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.schemas.retriever import RetrievedChunk
+
 
 class PromptBuildRequest(BaseModel):
     query: str
@@ -18,3 +20,4 @@ class PromptBuildResponse(BaseModel):
     query: str
     context: str
     messages: list[PromptMessage]
+    chunks: list[RetrievedChunk]
