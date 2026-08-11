@@ -7,6 +7,7 @@ class RetrieverRequest(BaseModel):
     query: str
     embedding_model_id: UUID
     top_k: int = 5
+    distance_threshold: float | None = 0.4
 
 
 class RetrievedChunk(BaseModel):

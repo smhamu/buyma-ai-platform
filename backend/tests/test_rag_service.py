@@ -57,6 +57,7 @@ class RAGServiceTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(prompt_payload.query, payload.query)
         self.assertEqual(prompt_payload.embedding_model_id, model_id)
         self.assertEqual(prompt_payload.top_k, 3)
+        self.assertEqual(prompt_payload.distance_threshold, 0.4)
         create_provider.assert_called_once_with(
             provider_code="openai",
             model_name="test-model",

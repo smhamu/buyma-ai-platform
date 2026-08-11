@@ -25,10 +25,11 @@ class EmbeddingRepository(BaseRepository[Embedding]):
         query_vector: list[float],
         embedding_model_id: UUID,
         top_k: int = 5,
+        distance_threshold: float | None = None,
     ):
         distance = Embedding.vector.cosine_distance(query_vector)
 
-        result = await self.db.execute(
+        query = (
             select(
                 Embedding.id.label("embedding_id"),
                 Embedding.document_id,
@@ -41,8 +42,12 @@ class EmbeddingRepository(BaseRepository[Embedding]):
                 Embedding.embedding_model_id == embedding_model_id,
                 Embedding.status == "active",
             )
-            .order_by(distance)
-            .limit(top_k)
         )
+
+        if distance_threshold is not None:
+            query = query.where(distance <= distance_threshold)
+
+        query = query.order_by(distance).limit(top_k)
+        result = await self.db.execute(query)
 
         return result.all()

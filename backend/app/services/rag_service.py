@@ -18,6 +18,7 @@ class RAGService:
                 query=payload.query,
                 embedding_model_id=payload.embedding_model_id,
                 top_k=payload.top_k,
+                distance_threshold=payload.distance_threshold,
             )
         )
         chat_provider = ChatProviderFactory.create(

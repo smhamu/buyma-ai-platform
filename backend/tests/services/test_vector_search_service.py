@@ -36,6 +36,7 @@ async def test_search_returns_results_and_forwards_top_k():
         query="BUYMA rules",
         embedding_model_id=model_id,
         top_k=7,
+        distance_threshold=0.25,
     )
 
     with patch(
@@ -57,6 +58,7 @@ async def test_search_returns_results_and_forwards_top_k():
         query_vector=[0.1, 0.2],
         embedding_model_id=model_id,
         top_k=7,
+        distance_threshold=0.25,
     )
 
 

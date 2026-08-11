@@ -45,6 +45,7 @@ class RetrieverServiceTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(search_payload.query, payload.query)
         self.assertEqual(search_payload.embedding_model_id, model_id)
         self.assertEqual(search_payload.top_k, 2)
+        self.assertEqual(search_payload.distance_threshold, 0.4)
         self.assertEqual(
             result.context,
             "[Context 1]\nFirst chunk\n\n[Context 2]\nSecond chunk",
