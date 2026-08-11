@@ -12,6 +12,7 @@ from app.api.v1.embedding_models import router as embedding_models_router
 from app.api.v1.embedding_providers import router as embedding_providers_router
 from app.api.v1.embedding_jobs import router as embedding_jobs_router
 from app.api.v1.embeddings import router as embeddings_router
+from app.api.v1.vector_search import router as vector_search_router
 
 
 setup_logging()
@@ -62,3 +63,4 @@ app.include_router(embedding_providers_router)
 app.include_router(embedding_models_router)
 app.include_router(embedding_jobs_router)
 app.include_router(embeddings_router)
+app.include_router(vector_search_router)
