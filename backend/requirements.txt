@@ -15,3 +15,5 @@ passlib[bcrypt]
 python-multipart
 pgvector
 openai
+pytest
+pytest-asyncio
