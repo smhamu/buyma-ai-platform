@@ -1,0 +1,22 @@
+from uuid import UUID
+
+from pydantic import BaseModel
+
+
+class RetrieverRequest(BaseModel):
+    query: str
+    embedding_model_id: UUID
+    top_k: int = 5
+
+
+class RetrievedChunk(BaseModel):
+    document_id: UUID
+    chunk_id: UUID
+    content: str
+    distance: float
+
+
+class RetrieverResponse(BaseModel):
+    query: str
+    context: str
+    chunks: list[RetrievedChunk]
