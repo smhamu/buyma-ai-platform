@@ -1,6 +1,7 @@
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, OpenAIError
 
 from app.ai.chat.base import ChatProvider
+from app.ai.openai_error_handler import handle_openai_error
 from app.core.config import settings
 
 
@@ -13,10 +14,14 @@ class OpenAIChatProvider(ChatProvider):
         self.model_name = model_name
 
     async def generate(self, messages: list[dict[str, str]]) -> str:
-        response = await self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-        )
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+            )
+        except OpenAIError as exc:
+            handle_openai_error(exc)
+
         content = response.choices[0].message.content
 
         if content is None:
