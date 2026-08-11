@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
     refresh_token_expire_days: int = 30
     openai_api_key: str | None = None
+    openai_chat_model: str | None = None
     
     model_config = SettingsConfigDict(
         env_file=get_env_file(),
