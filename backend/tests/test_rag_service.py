@@ -74,9 +74,16 @@ class RAGServiceTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.sources[0].chunk_id, chunk_id)
 
     async def test_query_requires_chat_model_configuration(self):
-        service = RAGService(
-            prompt_builder_service=SimpleNamespace(build=AsyncMock())
+        prompt_builder_service = SimpleNamespace(
+            build=AsyncMock(
+                return_value=SimpleNamespace(
+                    context="[Context 1]\nRelevant information",
+                    messages=[],
+                    chunks=[SimpleNamespace()],
+                )
+            )
         )
+        service = RAGService(prompt_builder_service=prompt_builder_service)
 
         with patch(
             "app.services.rag_service.settings.openai_chat_model",
@@ -90,7 +97,7 @@ class RAGServiceTestCase(unittest.IsolatedAsyncioTestCase):
                     )
                 )
 
-        service.prompt_builder_service.build.assert_not_awaited()
+        prompt_builder_service.build.assert_awaited_once()
 
 
 if __name__ == "__main__":

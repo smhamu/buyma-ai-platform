@@ -10,9 +10,6 @@ class RAGService:
         self.prompt_builder_service = prompt_builder_service
 
     async def query(self, payload: RAGQueryRequest) -> RAGQueryResponse:
-        if not settings.openai_chat_model:
-            raise ValueError("OPENAI_CHAT_MODEL is not configured.")
-
         prompt_result = await self.prompt_builder_service.build(
             PromptBuildRequest(
                 query=payload.query,
@@ -21,6 +18,21 @@ class RAGService:
                 distance_threshold=payload.distance_threshold,
             )
         )
+
+        if not prompt_result.chunks:
+            return RAGQueryResponse(
+                query=payload.query,
+                answer=(
+                    "関連する情報が見つかりませんでした。"
+                    "登録済みのDocumentに質問へ回答できる情報があるか確認してください。"
+                ),
+                context="",
+                sources=[],
+            )
+
+        if not settings.openai_chat_model:
+            raise ValueError("OPENAI_CHAT_MODEL is not configured.")
+
         chat_provider = ChatProviderFactory.create(
             provider_code="openai",
             model_name=settings.openai_chat_model,

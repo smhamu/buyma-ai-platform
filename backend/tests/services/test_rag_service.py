@@ -60,7 +60,7 @@ async def test_query_connects_prompt_builder_to_chat_provider_and_returns_source
 
 
 @pytest.mark.asyncio
-async def test_query_handles_empty_context_without_calling_openai_directly():
+async def test_query_returns_fallback_without_creating_chat_provider_when_empty():
     prompt_builder = SimpleNamespace(
         build=AsyncMock(
             return_value=SimpleNamespace(
@@ -73,22 +73,20 @@ async def test_query_handles_empty_context_without_calling_openai_directly():
             )
         )
     )
-    chat_provider = SimpleNamespace(
-        generate=AsyncMock(return_value="Context is insufficient")
-    )
     service = RAGService(prompt_builder_service=prompt_builder)
 
-    with (
-        patch("app.services.rag_service.settings.openai_chat_model", "test-model"),
-        patch(
-            "app.services.rag_service.ChatProviderFactory.create",
-            return_value=chat_provider,
-        ),
-    ):
+    with patch(
+        "app.services.rag_service.ChatProviderFactory.create"
+    ) as create_provider:
         result = await service.query(
-            RAGQueryRequest(query="Unknown", embedding_model_id=uuid4())
+            RAGQueryRequest(
+                query="Unknown",
+                embedding_model_id=uuid4(),
+                distance_threshold=0.1,
+            )
         )
 
+    create_provider.assert_not_called()
     assert result.context == ""
     assert result.sources == []
-    assert result.answer == "Context is insufficient"
+    assert "関連する情報が見つかりませんでした" in result.answer
