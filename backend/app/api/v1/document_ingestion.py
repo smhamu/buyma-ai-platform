@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +17,11 @@ from app.schemas.document_ingestion import (
     DocumentIngestionRequest,
     DocumentIngestionResponse,
 )
+from app.schemas.document_ingestion_retry import DocumentIngestionRetryResponse
 from app.schemas.embedding_job import EmbeddingJobResponse
+from app.services.document_ingestion_retry_service import (
+    DocumentIngestionRetryService,
+)
 from app.services.document_ingestion_service import DocumentIngestionService
 from app.services.embedding_queue_service import EmbeddingQueueService
 
@@ -35,6 +41,17 @@ def get_document_ingestion_service(
 
 def get_embedding_queue_service() -> EmbeddingQueueService:
     return EmbeddingQueueService()
+
+
+def get_document_ingestion_retry_service(
+    db: AsyncSession = Depends(get_db),
+    queue_service: EmbeddingQueueService = Depends(get_embedding_queue_service),
+) -> DocumentIngestionRetryService:
+    return DocumentIngestionRetryService(
+        document_repository=DocumentRepository(db),
+        embedding_job_repository=EmbeddingJobRepository(db),
+        queue_service=queue_service,
+    )
 
 
 @router.post("/ingest")
@@ -67,4 +84,24 @@ async def ingest_document(
     return success_response(
         data=response.model_dump(),
         message="Document ingestion completed successfully.",
+    )
+
+
+@router.post(
+    "/{document_id}/retry-ingestion",
+    response_model=dict,
+)
+async def retry_document_ingestion(
+    document_id: UUID,
+    service: DocumentIngestionRetryService = Depends(
+        get_document_ingestion_retry_service
+    ),
+    current_user: User = Depends(require_admin),
+):
+    result = await service.retry(document_id)
+    response = DocumentIngestionRetryResponse(**result)
+
+    return success_response(
+        data=response.model_dump(),
+        message="Document ingestion retry started successfully.",
     )

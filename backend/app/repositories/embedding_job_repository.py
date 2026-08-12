@@ -19,6 +19,20 @@ class EmbeddingJobRepository(BaseRepository[EmbeddingJob]):
         )
         return list(result.scalars().all())
 
+    async def find_failed_by_document_id(
+        self,
+        document_id: UUID,
+    ) -> list[EmbeddingJob]:
+        result = await self.db.execute(
+            select(EmbeddingJob)
+            .where(
+                EmbeddingJob.document_id == document_id,
+                EmbeddingJob.status == "failed",
+            )
+            .order_by(EmbeddingJob.created_at.asc())
+        )
+        return list(result.scalars().all())
+
     async def find_pending(self) -> list[EmbeddingJob]:
         result = await self.db.execute(
             select(EmbeddingJob)
