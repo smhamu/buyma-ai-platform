@@ -14,6 +14,8 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.user import LoginRequest, UserCreate
 from app.schemas.user import LoginRequest, RefreshTokenRequest, UserCreate
 
+DUMMY_PASSWORD_HASH = hash_password("dummy-password-used-for-timing-only")
+
 class UserService:
     def __init__(self, repository: UserRepository):
         self.repository = repository
@@ -38,8 +40,10 @@ class UserService:
 
     async def login(self, payload: LoginRequest):
         user = await self.repository.find_by_email(payload.email)
+        password_hash = user.hashed_password if user is not None else DUMMY_PASSWORD_HASH
+        password_matches = verify_password(payload.password, password_hash)
 
-        if user is None or not verify_password(payload.password, user.hashed_password):
+        if user is None or not password_matches or not user.is_active:
             raise AppException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 code="INVALID_CREDENTIALS",

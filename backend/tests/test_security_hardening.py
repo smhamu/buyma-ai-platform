@@ -12,6 +12,8 @@ from app.main import app
 from app.schemas.prompt_builder import PromptBuildRequest
 from app.schemas.rag import RAGQueryRequest
 from app.schemas.retriever import RetrieverRequest
+from app.schemas.knowledge_base import KnowledgeBaseCreate
+from app.schemas.user import UserCreate
 from app.schemas.vector_search import VectorSearchRequest
 from app.services.document_file_ingestion_service import DocumentFileIngestionService
 
@@ -161,3 +163,18 @@ def test_cors_allowed_origins_are_configured():
 
     assert "http://localhost:3000" in cors_middleware.kwargs["allow_origins"]
     assert cors_middleware.kwargs["allow_credentials"] is False
+
+
+def test_user_create_requires_mvp_password_length():
+    with pytest.raises(ValidationError):
+        UserCreate(email="user@example.com", username="user", password="short")
+
+    with pytest.raises(ValidationError):
+        UserCreate(email="user@example.com", username="user", password="譁" * 30)
+
+
+def test_knowledge_base_limits_name_and_description():
+    with pytest.raises(ValidationError):
+        KnowledgeBaseCreate(name="n" * 256)
+    with pytest.raises(ValidationError):
+        KnowledgeBaseCreate(name="valid", description="d" * 4001)

@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.exceptions import AppException
 from app.common.responses import success_response
+from app.core.config import settings
 from app.core.database import get_db
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import LoginRequest, UserCreate, UserResponse
@@ -30,6 +32,12 @@ async def register(
     payload: UserCreate,
     service: UserService = Depends(get_user_service),
 ):
+    if not settings.registration_enabled:
+        raise AppException(
+            status_code=403,
+            code="REGISTRATION_DISABLED",
+            message="User registration is disabled.",
+        )
     user = await service.register(payload)
 
     return success_response(

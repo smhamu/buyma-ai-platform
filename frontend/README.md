@@ -88,7 +88,7 @@ docker run --rm -it ^
   -w /workspace/frontend ^
   -e VITE_API_BASE_URL=http://host.docker.internal:8000 ^
   -e E2E_BASE_URL=http://127.0.0.1:5173 ^
-  mcr.microsoft.com/playwright:v1.55.0-jammy ^
+  mcr.microsoft.com/playwright:v1.55.1-jammy ^
   sh -lc "npm ci && npx playwright test"
 ```
 
@@ -159,6 +159,13 @@ docker run --rm --add-host=host.docker.internal:host-gateway `
   -w /work `
   -e E2E_BASE_URL=http://host.docker.internal:8080 `
   -e VITE_API_BASE_URL=http://host.docker.internal:8000 `
-  mcr.microsoft.com/playwright:v1.55.0-jammy `
+  mcr.microsoft.com/playwright:v1.55.1-jammy `
   npm run test:e2e
 ```
+
+## MVP release hardening
+
+Production deployment uses `docker-compose.prod.yml`, not the development Compose
+file. It publishes only the frontend port; Backend, PostgreSQL, and Redis remain on
+internal Docker networks. Complete [the release checklist](../docs/MVP_RELEASE_CHECKLIST.md)
+before exposing the application to the Internet.

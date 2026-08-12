@@ -34,6 +34,9 @@ app = FastAPI(
         "document ingestion, embeddings, vector search and RAG."
     ),
     version="1.0.0",
+    docs_url="/docs" if settings.enable_api_docs else None,
+    redoc_url="/redoc" if settings.enable_api_docs else None,
+    openapi_url="/openapi.json" if settings.enable_api_docs else None,
 )
 
 cors_allowed_origins = [
