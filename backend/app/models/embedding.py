@@ -19,14 +19,14 @@ class Embedding(Base):
 
     document_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("documents.id"),
+        ForeignKey("documents.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
 
     chunk_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("document_chunks.id"),
+        ForeignKey("document_chunks.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -40,7 +40,7 @@ class Embedding(Base):
 
     embedding_job_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("embedding_jobs.id"),
+        ForeignKey("embedding_jobs.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
