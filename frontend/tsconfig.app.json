@@ -16,7 +16,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "tsBuildInfoFile": "./node_modules/.cache/tsconfig.app.tsbuildinfo"
   },
   "include": ["src"]
 }

@@ -96,3 +96,69 @@ Notes:
 
 - Keep `docker compose up -d` running for backend / postgres / redis / celery
 - The Playwright config saves screenshots, traces, and videos on failure
+
+## Production-like deployment
+
+The production image uses a Node 20 multi-stage build and serves the generated
+Vite bundle from nginx. The browser calls `/api/*` on the same origin. nginx
+removes the `/api` prefix and proxies the request to `backend:8000`.
+
+`VITE_API_BASE_URL` is a Vite build-time value, not a container runtime setting.
+The Docker build defaults it to `/api`. To build with a different public API base,
+pass a build argument explicitly; do not expect an environment variable added to
+an already-built frontend container to change the bundle.
+
+Build and start the production-like frontend with the existing backend stack:
+
+```bash
+docker compose build frontend
+docker compose up -d frontend
+```
+
+Open:
+
+```text
+http://localhost:8080
+```
+
+The nginx SPA fallback supports direct access and reloads for routes such as:
+
+```text
+/login
+/knowledge-bases
+/knowledge-bases/:id
+/knowledge-bases/:id/documents
+/knowledge-bases/:id/documents/:documentId
+```
+
+Development continues to use Vite and `frontend/.env.development`:
+
+```bash
+npm run dev
+```
+
+### E2E against the production frontend
+
+Keep the Compose stack, including `frontend`, running and point Playwright at
+port 8080. `VITE_API_BASE_URL` below is used by E2E setup and cleanup requests;
+the browser application itself uses the nginx `/api` proxy baked into the image.
+
+PowerShell:
+
+```powershell
+$env:E2E_BASE_URL = "http://localhost:8080"
+$env:VITE_API_BASE_URL = "http://localhost:8000"
+npm run test:e2e
+```
+
+Docker-based Playwright execution:
+
+```powershell
+docker run --rm --add-host=host.docker.internal:host-gateway `
+  -v "${PWD}/frontend:/work" `
+  -w /work `
+  -e E2E_BASE_URL=http://host.docker.internal:8080 `
+  -e VITE_API_BASE_URL=http://host.docker.internal:8000 `
+  mcr.microsoft.com/playwright:v1.55.0-jammy `
+  npm run test:e2e
+```
