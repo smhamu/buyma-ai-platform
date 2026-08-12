@@ -66,6 +66,15 @@ class FakeDiffService:
         return self.result
 
 
+class FakeQueueService:
+    def __init__(self):
+        self.enqueued_job_ids = []
+
+    def enqueue(self, job_id):
+        self.enqueued_job_ids.append(job_id)
+        return f"task-{job_id}"
+
+
 @pytest.mark.asyncio
 async def test_list_document_versions_returns_all_versions():
     version_group_id = uuid4()
@@ -125,13 +134,15 @@ async def test_restore_document_version_returns_new_document():
             "restored_from_document_id": restored_from.id,
             "restored_from_version": restored_from.version,
             "new_document": new_document,
-            "task_ids": ["task-id"],
+            "embedding_jobs": [SimpleNamespace(id=uuid4())],
         }
     )
+    queue_service = FakeQueueService()
 
     response = await restore_document_version(
         document_id=restored_from.id,
         service=service,
+        queue_service=queue_service,
         current_user=SimpleNamespace(),
     )
 
@@ -142,7 +153,12 @@ async def test_restore_document_version_returns_new_document():
     assert response["data"]["restored_from_version"] == 1
     assert response["data"]["new_document"]["version"] == 3
     assert response["data"]["new_document"]["is_latest"] is True
-    assert response["data"]["task_ids"] == ["task-id"]
+    assert queue_service.enqueued_job_ids == [
+        service.result["embedding_jobs"][0].id
+    ]
+    assert response["data"]["task_ids"] == [
+        f"task-{service.result['embedding_jobs'][0].id}"
+    ]
 
 
 @pytest.mark.asyncio

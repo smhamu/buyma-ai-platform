@@ -22,6 +22,25 @@ class FakeRepository:
         self.created.append(obj)
         return obj
 
+    async def create_without_commit(self, data):
+        return await self.create(data)
+
+
+class FakeTransaction:
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, traceback):
+        return False
+
+
+class FakeDb:
+    def in_transaction(self):
+        return False
+
+    def begin(self):
+        return FakeTransaction()
+
 
 @pytest.mark.asyncio
 async def test_ingest_creates_document_chunks_and_embedding_jobs():
@@ -31,6 +50,7 @@ async def test_ingest_creates_document_chunks_and_embedding_jobs():
     embedding_job_repository = FakeRepository()
     embedding_model_repository = FakeRepository(model=SimpleNamespace())
     service = DocumentIngestionService(
+        db=FakeDb(),
         document_repository=document_repository,
         chunk_repository=chunk_repository,
         embedding_job_repository=embedding_job_repository,
@@ -62,6 +82,7 @@ async def test_ingest_creates_document_chunks_and_embedding_jobs():
 @pytest.mark.asyncio
 async def test_ingest_raises_when_embedding_model_does_not_exist():
     service = DocumentIngestionService(
+        db=FakeDb(),
         document_repository=FakeRepository(),
         chunk_repository=FakeRepository(),
         embedding_job_repository=FakeRepository(),
@@ -82,6 +103,7 @@ async def test_ingest_raises_when_embedding_model_does_not_exist():
 @pytest.mark.asyncio
 async def test_ingest_raises_when_knowledge_base_does_not_exist():
     service = DocumentIngestionService(
+        db=FakeDb(),
         document_repository=FakeRepository(),
         chunk_repository=FakeRepository(),
         embedding_job_repository=FakeRepository(),
@@ -105,6 +127,7 @@ async def test_ingest_raises_when_knowledge_base_does_not_exist():
 @pytest.mark.asyncio
 async def test_ingest_raises_when_knowledge_base_is_inactive():
     service = DocumentIngestionService(
+        db=FakeDb(),
         document_repository=FakeRepository(),
         chunk_repository=FakeRepository(),
         embedding_job_repository=FakeRepository(),

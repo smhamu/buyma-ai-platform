@@ -37,6 +37,7 @@ def get_document_ingestion_service(
     db: AsyncSession = Depends(get_db),
 ) -> DocumentIngestionService:
     return DocumentIngestionService(
+        db=db,
         document_repository=DocumentRepository(db),
         chunk_repository=DocumentChunkRepository(db),
         embedding_job_repository=EmbeddingJobRepository(db),
@@ -54,9 +55,9 @@ def get_document_ingestion_retry_service(
     queue_service: EmbeddingQueueService = Depends(get_embedding_queue_service),
 ) -> DocumentIngestionRetryService:
     return DocumentIngestionRetryService(
+        db=db,
         document_repository=DocumentRepository(db),
         embedding_job_repository=EmbeddingJobRepository(db),
-        queue_service=queue_service,
     )
 
 
@@ -65,6 +66,7 @@ def get_document_file_ingestion_service(
 ) -> DocumentFileIngestionService:
     document_repository = DocumentRepository(db)
     ingestion_service = DocumentIngestionService(
+        db=db,
         document_repository=document_repository,
         chunk_repository=DocumentChunkRepository(db),
         embedding_job_repository=EmbeddingJobRepository(db),
@@ -72,6 +74,7 @@ def get_document_file_ingestion_service(
         knowledge_base_repository=KnowledgeBaseRepository(db),
     )
     return DocumentFileIngestionService(
+        db=db,
         ingestion_service=ingestion_service,
         document_repository=document_repository,
     )
@@ -168,10 +171,20 @@ async def retry_document_ingestion(
     service: DocumentIngestionRetryService = Depends(
         get_document_ingestion_retry_service
     ),
+    queue_service: EmbeddingQueueService = Depends(get_embedding_queue_service),
     current_user: User = Depends(require_admin),
 ):
     result = await service.retry(document_id)
-    response = DocumentIngestionRetryResponse(**result)
+    task_ids = [
+        queue_service.enqueue(job.id)
+        for job in result["embedding_jobs"]
+    ]
+    response = DocumentIngestionRetryResponse(
+        document_id=result["document_id"],
+        retried_job_ids=result["retried_job_ids"],
+        task_ids=task_ids,
+        retried_count=result["retried_count"],
+    )
 
     return success_response(
         data=response.model_dump(),

@@ -32,6 +32,7 @@ def get_document_version_rollback_service(
     document_repository = DocumentRepository(db)
     embedding_job_repository = EmbeddingJobRepository(db)
     ingestion_service = DocumentIngestionService(
+        db=db,
         document_repository=document_repository,
         chunk_repository=DocumentChunkRepository(db),
         embedding_job_repository=embedding_job_repository,
@@ -39,10 +40,10 @@ def get_document_version_rollback_service(
         knowledge_base_repository=KnowledgeBaseRepository(db),
     )
     return DocumentVersionRollbackService(
+        db=db,
         document_repository=document_repository,
         embedding_job_repository=embedding_job_repository,
         ingestion_service=ingestion_service,
-        queue_service=EmbeddingQueueService(),
     )
 
 
@@ -102,14 +103,19 @@ async def restore_document_version(
     service: DocumentVersionRollbackService = Depends(
         get_document_version_rollback_service
     ),
+    queue_service: EmbeddingQueueService = Depends(EmbeddingQueueService),
     current_user: User = Depends(require_admin),
 ):
     result = await service.restore(document_id)
+    task_ids = [
+        queue_service.enqueue(job.id)
+        for job in result["embedding_jobs"]
+    ]
     response = DocumentVersionRollbackResponse(
         restored_from_document_id=result["restored_from_document_id"],
         restored_from_version=result["restored_from_version"],
         new_document=DocumentResponse.model_validate(result["new_document"]),
-        task_ids=result["task_ids"],
+        task_ids=task_ids,
     )
 
     return success_response(

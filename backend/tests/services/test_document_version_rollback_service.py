@@ -35,9 +35,31 @@ def make_document(**overrides):
 class FakeDb:
     def __init__(self):
         self.commit_count = 0
+        self.flush_count = 0
+        self.rollback_count = 0
+
+    def in_transaction(self):
+        return False
 
     async def commit(self):
         self.commit_count += 1
+
+    async def rollback(self):
+        self.rollback_count += 1
+
+    async def flush(self):
+        self.flush_count += 1
+
+    def begin(self):
+        return FakeTransaction()
+
+
+class FakeTransaction:
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, traceback):
+        return False
 
 
 class FakeDocumentRepository:
@@ -67,22 +89,13 @@ class FakeIngestionService:
         self.jobs = jobs
         self.payloads = []
 
-    async def ingest(self, payload):
+    async def ingest_in_transaction(self, payload):
         self.payloads.append(payload)
         return {
             "document": self.new_document,
             "chunks": [],
             "embedding_jobs": self.jobs,
         }
-
-
-class FakeQueueService:
-    def __init__(self):
-        self.enqueued_job_ids = []
-
-    def enqueue(self, job_id):
-        self.enqueued_job_ids.append(job_id)
-        return f"task-{job_id}"
 
 
 def make_service(
@@ -92,7 +105,6 @@ def make_service(
     new_document=None,
     jobs=None,
 ):
-    queue_service = FakeQueueService()
     ingestion_service = FakeIngestionService(
         new_document=new_document or make_document(version=3, is_latest=True),
         jobs=jobs or [],
@@ -102,16 +114,16 @@ def make_service(
         latest_document=latest_document,
     )
     service = DocumentVersionRollbackService(
+        db=document_repository.db,
         document_repository=document_repository,
         embedding_job_repository=FakeEmbeddingJobRepository(latest_job),
         ingestion_service=ingestion_service,
-        queue_service=queue_service,
     )
-    return service, document_repository, ingestion_service, queue_service
+    return service, document_repository, ingestion_service
 
 
 @pytest.mark.asyncio
-async def test_restore_old_version_creates_new_latest_version_and_enqueues_jobs():
+async def test_restore_old_version_creates_new_latest_version_and_returns_jobs():
     version_group_id = uuid4()
     embedding_model_id = uuid4()
     source = make_document(
@@ -137,7 +149,7 @@ async def test_restore_old_version_creates_new_latest_version_and_enqueues_jobs(
         SimpleNamespace(id=uuid4()),
         SimpleNamespace(id=uuid4()),
     ]
-    service, repository, ingestion_service, queue_service = make_service(
+    service, repository, ingestion_service = make_service(
         source_document=source,
         latest_document=latest,
         latest_job=SimpleNamespace(embedding_model_id=embedding_model_id),
@@ -156,17 +168,17 @@ async def test_restore_old_version_creates_new_latest_version_and_enqueues_jobs(
     assert payload.original_filename == source.original_filename
     assert payload.checksum == source.checksum
     assert latest.is_latest is False
-    assert repository.db.commit_count == 1
-    assert queue_service.enqueued_job_ids == [job.id for job in jobs]
+    assert repository.db.commit_count == 0
+    assert repository.db.flush_count == 1
     assert result["restored_from_document_id"] == source.id
     assert result["restored_from_version"] == 1
     assert result["new_document"] == new_document
-    assert result["task_ids"] == [f"task-{job.id}" for job in jobs]
+    assert result["embedding_jobs"] == jobs
 
 
 @pytest.mark.asyncio
 async def test_restore_raises_when_document_does_not_exist():
-    service, _, _, _ = make_service(
+    service, _, _ = make_service(
         source_document=None,
         latest_document=None,
         latest_job=None,
@@ -179,7 +191,7 @@ async def test_restore_raises_when_document_does_not_exist():
 @pytest.mark.asyncio
 async def test_restore_raises_when_latest_version_missing():
     source = make_document(is_latest=False)
-    service, _, _, _ = make_service(
+    service, _, _ = make_service(
         source_document=source,
         latest_document=None,
         latest_job=None,
@@ -195,7 +207,7 @@ async def test_restore_raises_when_latest_version_missing():
 @pytest.mark.asyncio
 async def test_restore_rejects_latest_version():
     source = make_document(is_latest=True)
-    service, _, _, _ = make_service(
+    service, _, _ = make_service(
         source_document=source,
         latest_document=source,
         latest_job=SimpleNamespace(embedding_model_id=uuid4()),
@@ -220,7 +232,7 @@ async def test_restore_rejects_when_latest_ingestion_is_in_progress(
         is_latest=True,
         ingestion_status=ingestion_status,
     )
-    service, _, _, _ = make_service(
+    service, _, _ = make_service(
         source_document=source,
         latest_document=latest,
         latest_job=SimpleNamespace(embedding_model_id=uuid4()),
@@ -238,7 +250,7 @@ async def test_restore_raises_when_embedding_model_cannot_be_resolved():
     version_group_id = uuid4()
     source = make_document(version_group_id=version_group_id, is_latest=False)
     latest = make_document(version_group_id=version_group_id, is_latest=True)
-    service, _, _, _ = make_service(
+    service, _, _ = make_service(
         source_document=source,
         latest_document=latest,
         latest_job=None,

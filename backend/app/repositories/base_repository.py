@@ -19,6 +19,12 @@ class BaseRepository(Generic[ModelType]):
         await self.db.refresh(db_obj)
         return db_obj
 
+    async def create_without_commit(self, obj_in: dict) -> ModelType:
+        db_obj = self.model(**obj_in)
+        self.db.add(db_obj)
+        await self.db.flush()
+        return db_obj
+
     async def find_all(self) -> list[ModelType]:
         result = await self.db.execute(
             select(self.model).order_by(self.model.created_at.desc())

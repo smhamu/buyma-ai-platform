@@ -12,9 +12,27 @@ from app.services.document_ingestion_retry_service import (
 class FakeDb:
     def __init__(self):
         self.commit_count = 0
+        self.rollback_count = 0
+
+    def in_transaction(self):
+        return False
 
     async def commit(self):
         self.commit_count += 1
+
+    async def rollback(self):
+        self.rollback_count += 1
+
+    def begin(self):
+        return FakeTransaction()
+
+
+class FakeTransaction:
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, traceback):
+        return False
 
 
 class FakeDocumentRepository:
@@ -34,24 +52,15 @@ class FakeEmbeddingJobRepository:
         return self.jobs
 
 
-class FakeQueueService:
-    def __init__(self):
-        self.enqueued_job_ids = []
-
-    def enqueue(self, job_id):
-        self.enqueued_job_ids.append(job_id)
-        return f"task-{job_id}"
-
-
 def make_service(document, jobs):
-    queue_service = FakeQueueService()
+    db = FakeDb()
     embedding_job_repository = FakeEmbeddingJobRepository(jobs)
     service = DocumentIngestionRetryService(
+        db=db,
         document_repository=FakeDocumentRepository(document),
         embedding_job_repository=embedding_job_repository,
-        queue_service=queue_service,
     )
-    return service, embedding_job_repository, queue_service
+    return service, embedding_job_repository, db
 
 
 @pytest.mark.asyncio
@@ -85,7 +94,7 @@ async def test_retry_resets_failed_job_status_and_enqueues_it():
         error_message="temporary failure",
         retry_count=3,
     )
-    service, embedding_job_repository, queue_service = make_service(
+    service, embedding_job_repository, db = make_service(
         document=document,
         jobs=[job],
     )
@@ -96,11 +105,11 @@ async def test_retry_resets_failed_job_status_and_enqueues_it():
     assert job.error_message is None
     assert job.retry_count == 3
     assert document.ingestion_status == "pending"
-    assert embedding_job_repository.db.commit_count == 1
-    assert queue_service.enqueued_job_ids == [job.id]
+    assert embedding_job_repository.db.commit_count == 0
+    assert db.commit_count == 0
     assert result["document_id"] == document.id
     assert result["retried_job_ids"] == [job.id]
-    assert result["task_ids"] == [f"task-{job.id}"]
+    assert result["embedding_jobs"] == [job]
     assert result["retried_count"] == 1
 
 
@@ -121,13 +130,13 @@ async def test_retry_enqueues_multiple_failed_jobs():
             retry_count=2,
         ),
     ]
-    service, _, queue_service = make_service(document=document, jobs=jobs)
+    service, _, _ = make_service(document=document, jobs=jobs)
 
     result = await service.retry(document.id)
 
     assert [job.status for job in jobs] == ["pending", "pending"]
     assert [job.error_message for job in jobs] == [None, None]
     assert [job.retry_count for job in jobs] == [1, 2]
-    assert queue_service.enqueued_job_ids == [job.id for job in jobs]
     assert result["retried_job_ids"] == [job.id for job in jobs]
+    assert result["embedding_jobs"] == jobs
     assert result["retried_count"] == 2

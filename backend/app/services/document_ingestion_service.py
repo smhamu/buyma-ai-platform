@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from fastapi import status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.exceptions import AppException, NotFoundException
 from app.repositories.document_chunk_repository import DocumentChunkRepository
@@ -14,12 +15,14 @@ from app.schemas.document_ingestion import DocumentIngestionRequest
 class DocumentIngestionService:
     def __init__(
         self,
+        db: AsyncSession,
         document_repository: DocumentRepository,
         chunk_repository: DocumentChunkRepository,
         embedding_job_repository: EmbeddingJobRepository,
         embedding_model_repository: EmbeddingModelRepository,
         knowledge_base_repository: KnowledgeBaseRepository,
     ):
+        self.db = db
         self.document_repository = document_repository
         self.chunk_repository = chunk_repository
         self.embedding_job_repository = embedding_job_repository
@@ -27,6 +30,19 @@ class DocumentIngestionService:
         self.knowledge_base_repository = knowledge_base_repository
 
     async def ingest(self, payload: DocumentIngestionRequest):
+        if self.db.in_transaction():
+            try:
+                result = await self.ingest_in_transaction(payload)
+                await self.db.commit()
+                return result
+            except Exception:
+                await self.db.rollback()
+                raise
+
+        async with self.db.begin():
+            return await self.ingest_in_transaction(payload)
+
+    async def ingest_in_transaction(self, payload: DocumentIngestionRequest):
         if payload.knowledge_base_id is not None:
             knowledge_base = await self.knowledge_base_repository.find_by_id(
                 payload.knowledge_base_id
@@ -49,7 +65,7 @@ class DocumentIngestionService:
         if embedding_model is None:
             raise NotFoundException("EmbeddingModel")
 
-        document = await self.document_repository.create(
+        document = await self.document_repository.create_without_commit(
             {
                 "knowledge_base_id": payload.knowledge_base_id,
                 "title": payload.title,
@@ -73,7 +89,7 @@ class DocumentIngestionService:
         for index, content in enumerate(
             self._split_text(document.content, payload.chunk_size)
         ):
-            chunk = await self.chunk_repository.create(
+            chunk = await self.chunk_repository.create_without_commit(
                 {
                     "document_id": document.id,
                     "chunk_index": index,
@@ -84,7 +100,7 @@ class DocumentIngestionService:
 
         created_jobs = []
         for chunk in created_chunks:
-            job = await self.embedding_job_repository.create(
+            job = await self.embedding_job_repository.create_without_commit(
                 {
                     "document_id": document.id,
                     "chunk_id": chunk.id,

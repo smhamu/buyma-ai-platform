@@ -1,29 +1,42 @@
 from uuid import UUID
 
 from fastapi import status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.exceptions import AppException, NotFoundException
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.embedding_job_repository import EmbeddingJobRepository
 from app.schemas.document_ingestion import DocumentIngestionRequest
 from app.services.document_ingestion_service import DocumentIngestionService
-from app.services.embedding_queue_service import EmbeddingQueueService
 
 
 class DocumentVersionRollbackService:
     def __init__(
         self,
+        db: AsyncSession,
         document_repository: DocumentRepository,
         embedding_job_repository: EmbeddingJobRepository,
         ingestion_service: DocumentIngestionService,
-        queue_service: EmbeddingQueueService,
     ):
+        self.db = db
         self.document_repository = document_repository
         self.embedding_job_repository = embedding_job_repository
         self.ingestion_service = ingestion_service
-        self.queue_service = queue_service
 
     async def restore(self, document_id: UUID):
+        if self.db.in_transaction():
+            try:
+                result = await self.restore_in_transaction(document_id)
+                await self.db.commit()
+                return result
+            except Exception:
+                await self.db.rollback()
+                raise
+
+        async with self.db.begin():
+            return await self.restore_in_transaction(document_id)
+
+    async def restore_in_transaction(self, document_id: UUID):
         source_document = await self.document_repository.find_by_id(document_id)
         if source_document is None:
             raise NotFoundException("Document")
@@ -65,7 +78,10 @@ class DocumentVersionRollbackService:
                 message="Embedding model could not be resolved for rollback.",
             )
 
-        result = await self.ingestion_service.ingest(
+        latest_document.is_latest = False
+        await self.db.flush()
+
+        result = await self.ingestion_service.ingest_in_transaction(
             DocumentIngestionRequest(
                 knowledge_base_id=source_document.knowledge_base_id,
                 title=source_document.title,
@@ -87,17 +103,9 @@ class DocumentVersionRollbackService:
             )
         )
 
-        latest_document.is_latest = False
-        await self.document_repository.db.commit()
-
-        task_ids = [
-            self.queue_service.enqueue(job.id)
-            for job in result["embedding_jobs"]
-        ]
-
         return {
             "restored_from_document_id": source_document.id,
             "restored_from_version": source_document.version,
             "new_document": result["document"],
-            "task_ids": task_ids,
+            "embedding_jobs": result["embedding_jobs"],
         }

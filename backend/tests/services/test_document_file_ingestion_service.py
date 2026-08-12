@@ -13,14 +13,36 @@ from app.services.document_file_ingestion_service import (
 class FakeDb:
     def __init__(self):
         self.commit_count = 0
+        self.flush_count = 0
+        self.rollback_count = 0
+
+    def in_transaction(self):
+        return False
 
     async def commit(self):
         self.commit_count += 1
 
+    async def rollback(self):
+        self.rollback_count += 1
+
+    async def flush(self):
+        self.flush_count += 1
+
+    def begin(self):
+        return FakeTransaction()
+
+
+class FakeTransaction:
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, traceback):
+        return False
+
 
 class FakeIngestionService:
     def __init__(self):
-        self.ingest = AsyncMock(
+        self.ingest_in_transaction = AsyncMock(
             return_value={
                 "document": SimpleNamespace(id=uuid4()),
                 "chunks": [],
@@ -53,6 +75,7 @@ class FakeDocumentRepository:
 def make_service(ingestion_service=None, latest_document=None):
     repository = FakeDocumentRepository(latest_document)
     service = DocumentFileIngestionService(
+        db=repository.db,
         ingestion_service=ingestion_service or FakeIngestionService(),
         document_repository=repository,
     )
@@ -76,7 +99,7 @@ async def test_first_upload_sets_version_1_and_metadata():
         chunk_size=500,
     )
 
-    payload = ingestion_service.ingest.await_args.args[0]
+    payload = ingestion_service.ingest_in_transaction.await_args.args[0]
     assert payload.title == "rule"
     assert payload.content == "BUYMA price rule"
     assert payload.source_type == "file"
@@ -123,9 +146,10 @@ async def test_same_filename_changed_content_creates_next_version():
         embedding_model_id=uuid4(),
     )
 
-    payload = ingestion_service.ingest.await_args.args[0]
+    payload = ingestion_service.ingest_in_transaction.await_args.args[0]
     assert latest_document.is_latest is False
-    assert repository.db.commit_count == 1
+    assert repository.db.commit_count == 0
+    assert repository.db.flush_count == 1
     assert payload.version == 2
     assert payload.previous_document_id == previous_id
     assert payload.version_group_id == version_group_id
@@ -170,7 +194,7 @@ async def test_different_filename_uses_separate_version_group():
         embedding_model_id=uuid4(),
     )
 
-    payload = ingestion_service.ingest.await_args.args[0]
+    payload = ingestion_service.ingest_in_transaction.await_args.args[0]
     assert payload.version == 1
     assert repository.find_latest_by_filename_calls[0]["original_filename"] == "other.txt"
 
@@ -186,7 +210,7 @@ async def test_ingest_markdown_extracts_content():
         embedding_model_id=uuid4(),
     )
 
-    payload = ingestion_service.ingest.await_args.args[0]
+    payload = ingestion_service.ingest_in_transaction.await_args.args[0]
     assert payload.title == "buyma_shipping"
     assert payload.content == "# BUYMA発送対応"
 
@@ -250,7 +274,7 @@ async def test_ingest_rejects_large_file():
 )
 async def test_ingest_propagates_knowledge_base_errors(exception):
     ingestion_service = FakeIngestionService()
-    ingestion_service.ingest.side_effect = exception
+    ingestion_service.ingest_in_transaction.side_effect = exception
     service, _ = make_service(ingestion_service)
 
     with pytest.raises(type(exception)):
