@@ -8,6 +8,7 @@ from app.common.exceptions import (
     AIProviderUnavailableException,
 )
 from app.core.config import settings
+from app.core.security_utils import sanitize_error_message
 from app.models.document import Document  # noqa: F401
 from app.models.document_chunk import DocumentChunk  # noqa: F401
 from app.models.embedding import Embedding  # noqa: F401
@@ -131,7 +132,9 @@ def _run_embedding_job_task(self, job_id: str):
                 asyncio.run(
                     _mark_job_failed(
                         job_id=job_id,
-                        error_message=f"Retry limit exceeded: {exc}",
+                        error_message=sanitize_error_message(
+                            f"Retry limit exceeded: {exc}"
+                        ),
                     )
                 )
                 raise
@@ -140,7 +143,7 @@ def _run_embedding_job_task(self, job_id: str):
                 _mark_job_for_retry(
                     job_id=job_id,
                     retry_count=retry_number,
-                    error_message=str(exc),
+                    error_message=sanitize_error_message(str(exc)),
                 )
             )
             countdown = min(2**retry_number * 5, 60)
@@ -151,7 +154,9 @@ def _run_embedding_job_task(self, job_id: str):
                 asyncio.run(
                     _mark_job_failed(
                         job_id=job_id,
-                        error_message=f"Retry limit exceeded: {exc}",
+                        error_message=sanitize_error_message(
+                            f"Retry limit exceeded: {exc}"
+                        ),
                     )
                 )
                 raise
@@ -159,7 +164,7 @@ def _run_embedding_job_task(self, job_id: str):
         asyncio.run(
             _mark_job_failed(
                 job_id=job_id,
-                error_message=str(exc),
+                error_message=sanitize_error_message(str(exc)),
             )
         )
         raise

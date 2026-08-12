@@ -15,6 +15,12 @@ from app.utils.checksum import calculate_sha256
 class DocumentFileIngestionService:
     SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md", ".markdown"}
     MAX_FILE_SIZE = 10 * 1024 * 1024
+    MIME_TYPES_BY_EXTENSION = {
+        ".pdf": {"application/pdf"},
+        ".txt": {"text/plain"},
+        ".md": {"text/markdown", "text/plain", "text/x-markdown"},
+        ".markdown": {"text/markdown", "text/plain", "text/x-markdown"},
+    }
 
     def __init__(
         self,
@@ -50,6 +56,12 @@ class DocumentFileIngestionService:
                 code="UNSUPPORTED_DOCUMENT_FILE",
                 message="Only PDF, TXT and Markdown files are supported.",
             )
+
+        self._validate_file_signature_and_type(
+            extension=extension,
+            file_content=file_content,
+            mime_type=mime_type,
+        )
 
         try:
             extractor = DocumentTextExtractorFactory.create(extension)
@@ -113,6 +125,37 @@ class DocumentFileIngestionService:
             "file_size": file_size,
             **result,
         }
+
+    @classmethod
+    def _validate_file_signature_and_type(
+        cls,
+        *,
+        extension: str,
+        file_content: bytes,
+        mime_type: str | None,
+    ) -> None:
+        if mime_type is not None:
+            allowed_types = cls.MIME_TYPES_BY_EXTENSION.get(extension, set())
+            if mime_type not in allowed_types:
+                raise AppException(
+                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                    code="UNSUPPORTED_DOCUMENT_FILE",
+                    message="Document file type does not match the extension.",
+                )
+
+        if extension == ".pdf" and not file_content.startswith(b"%PDF-"):
+            raise AppException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                code="UNSUPPORTED_DOCUMENT_FILE",
+                message="Document file signature does not match PDF format.",
+            )
+
+        if extension in {".txt", ".md", ".markdown"} and b"\x00" in file_content:
+            raise AppException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                code="UNSUPPORTED_DOCUMENT_FILE",
+                message="Binary document files are not supported for text uploads.",
+            )
 
     async def _ingest_file_in_transaction(
         self,

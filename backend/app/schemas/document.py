@@ -1,24 +1,38 @@
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class DocumentCreate(BaseModel):
     knowledge_base_id: UUID | None = None
-    title: str
-    content: str
+    title: str = Field(min_length=1, max_length=255)
+    content: str = Field(min_length=1, max_length=200000)
     source_type: str = "manual"
     source_url: str | None = None
     status: str = "active"
 
+    @field_validator("title", "content")
+    @classmethod
+    def validate_non_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Field must not be blank.")
+        return value
+
 
 class DocumentUpdate(BaseModel):
     knowledge_base_id: UUID | None = None
-    title: str | None = None
-    content: str | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    content: str | None = Field(default=None, min_length=1, max_length=200000)
     source_type: str | None = None
     source_url: str | None = None
     status: str | None = None
+
+    @field_validator("title", "content")
+    @classmethod
+    def validate_optional_non_blank(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("Field must not be blank.")
+        return value
 
 
 class DocumentResponse(BaseModel):
