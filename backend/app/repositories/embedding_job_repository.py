@@ -40,3 +40,15 @@ class EmbeddingJobRepository(BaseRepository[EmbeddingJob]):
             .order_by(EmbeddingJob.created_at.asc())
         )
         return list(result.scalars().all())
+
+    async def find_latest_by_document_id(
+        self,
+        document_id: UUID,
+    ) -> EmbeddingJob | None:
+        result = await self.db.execute(
+            select(EmbeddingJob)
+            .where(EmbeddingJob.document_id == document_id)
+            .order_by(EmbeddingJob.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()

@@ -3,7 +3,10 @@ from uuid import uuid4
 
 import pytest
 
-from app.api.v1.document_versions import list_document_versions
+from app.api.v1.document_versions import (
+    list_document_versions,
+    restore_document_version,
+)
 from app.common.exceptions import NotFoundException
 
 
@@ -40,6 +43,16 @@ class FakeRepository:
 
     async def find_versions_by_group(self, version_group_id):
         return self.versions
+
+
+class FakeRollbackService:
+    def __init__(self, result):
+        self.result = result
+        self.restored_ids = []
+
+    async def restore(self, document_id):
+        self.restored_ids.append(document_id)
+        return self.result
 
 
 @pytest.mark.asyncio
@@ -86,3 +99,36 @@ async def test_list_document_versions_raises_when_document_missing():
             )
     finally:
         module.DocumentRepository = original_repository
+
+
+@pytest.mark.asyncio
+async def test_restore_document_version_returns_new_document():
+    restored_from = make_document(version=1, is_latest=False)
+    new_document = make_document(
+        version=3,
+        previous_document_id=uuid4(),
+        is_latest=True,
+    )
+    service = FakeRollbackService(
+        {
+            "restored_from_document_id": restored_from.id,
+            "restored_from_version": restored_from.version,
+            "new_document": new_document,
+            "task_ids": ["task-id"],
+        }
+    )
+
+    response = await restore_document_version(
+        document_id=restored_from.id,
+        service=service,
+        current_user=SimpleNamespace(),
+    )
+
+    assert service.restored_ids == [restored_from.id]
+    assert response["success"] is True
+    assert response["message"] == "Document version restored successfully."
+    assert response["data"]["restored_from_document_id"] == restored_from.id
+    assert response["data"]["restored_from_version"] == 1
+    assert response["data"]["new_document"]["version"] == 3
+    assert response["data"]["new_document"]["is_latest"] is True
+    assert response["data"]["task_ids"] == ["task-id"]

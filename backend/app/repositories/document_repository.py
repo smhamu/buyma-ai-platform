@@ -70,3 +70,17 @@ class DocumentRepository(BaseRepository[Document]):
             .order_by(Document.version.asc())
         )
         return list(result.scalars().all())
+
+    async def find_latest_by_version_group(
+        self,
+        version_group_id: UUID,
+    ) -> Document | None:
+        result = await self.db.execute(
+            select(Document)
+            .where(
+                Document.version_group_id == version_group_id,
+                Document.is_latest.is_(True),
+            )
+            .order_by(Document.version.desc())
+        )
+        return result.scalar_one_or_none()
