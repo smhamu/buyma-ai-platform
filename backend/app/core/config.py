@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 30
     openai_api_key: str | None = None
     openai_chat_model: str | None = None
+    celery_broker_url: str = "redis://redis:6379/0"
+    celery_result_backend: str = "redis://redis:6379/1"
     
     model_config = SettingsConfigDict(
         env_file=get_env_file(),

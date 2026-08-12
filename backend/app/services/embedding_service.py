@@ -27,48 +27,61 @@ class EmbeddingService:
         if job is None:
             raise NotFoundException("EmbeddingJob")
 
-        chunk = await self.chunk_repository.find_by_id(job.chunk_id)
+        try:
+            job.status = "processing"
+            job.error_message = None
+            await self.job_repository.db.commit()
+            await self.job_repository.db.refresh(job)
 
-        if chunk is None:
-            raise NotFoundException("DocumentChunk")
+            chunk = await self.chunk_repository.find_by_id(job.chunk_id)
 
-        embedding_model = await self.model_repository.find_by_id_with_provider(
-            job.embedding_model_id
-        )
+            if chunk is None:
+                raise NotFoundException("DocumentChunk")
 
-        if embedding_model is None:
-            raise NotFoundException("EmbeddingModel")
+            embedding_model = await self.model_repository.find_by_id_with_provider(
+                job.embedding_model_id
+            )
 
-        provider_code = embedding_model.provider.provider_code
+            if embedding_model is None:
+                raise NotFoundException("EmbeddingModel")
 
-        provider = EmbeddingProviderFactory.create(
-            provider_code=provider_code,
-            model_name=embedding_model.model_name,
-        )
-        
-        vector = await provider.generate_embedding(
-            text=chunk.content,
-            dimension=embedding_model.dimension,
-        )
+            provider_code = embedding_model.provider.provider_code
 
-        embedding = await self.embedding_repository.create(
-            {
-                "document_id": job.document_id,
-                "chunk_id": job.chunk_id,
-                "embedding_model_id": job.embedding_model_id,
-                "embedding_job_id": job.id,
-                "vector": vector,
-                "dimension": embedding_model.dimension,
-                "status": "active",
-                "metadata_text": f"{provider_code} embedding for chunk {chunk.id}",
-            }
-        )
+            provider = EmbeddingProviderFactory.create(
+                provider_code=provider_code,
+                model_name=embedding_model.model_name,
+            )
 
-        job.status = "completed"
-        await self.job_repository.db.commit()
-        await self.job_repository.db.refresh(job)
+            vector = await provider.generate_embedding(
+                text=chunk.content,
+                dimension=embedding_model.dimension,
+            )
 
-        return embedding
+            embedding = await self.embedding_repository.create(
+                {
+                    "document_id": job.document_id,
+                    "chunk_id": job.chunk_id,
+                    "embedding_model_id": job.embedding_model_id,
+                    "embedding_job_id": job.id,
+                    "vector": vector,
+                    "dimension": embedding_model.dimension,
+                    "status": "active",
+                    "metadata_text": f"{provider_code} embedding for chunk {chunk.id}",
+                }
+            )
+
+            job.status = "completed"
+            await self.job_repository.db.commit()
+            await self.job_repository.db.refresh(job)
+
+            return embedding
+        except Exception as exc:
+            await self.job_repository.db.rollback()
+            job.status = "failed"
+            job.retry_count += 1
+            job.error_message = str(exc)[:1000]
+            await self.job_repository.db.commit()
+            raise
 
     async def list_embeddings(self):
         return await self.embedding_repository.find_all()

@@ -15,5 +15,6 @@ passlib[bcrypt]
 python-multipart
 pgvector
 openai
+celery[redis]
 pytest
 pytest-asyncio

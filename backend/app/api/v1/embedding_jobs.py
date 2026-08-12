@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, require_admin
+from app.common.exceptions import AppException
 from app.common.responses import success_response
 from app.core.database import get_db
 from app.models.user import User
@@ -13,6 +14,7 @@ from app.repositories.embedding_job_repository import EmbeddingJobRepository
 from app.repositories.embedding_model_repository import EmbeddingModelRepository
 from app.schemas.embedding_job import EmbeddingJobGenerateRequest, EmbeddingJobResponse
 from app.services.embedding_job_service import EmbeddingJobService
+from app.workers.embedding_tasks import run_embedding_job_task
 
 router = APIRouter(tags=["Embedding Jobs"])
 
@@ -84,4 +86,34 @@ async def get_embedding_job(
     return success_response(
         data=EmbeddingJobResponse.model_validate(job),
         message="Embedding job fetched successfully.",
+    )
+
+
+@router.post("/embedding-jobs/{job_id}/enqueue")
+async def enqueue_embedding_job(
+    job_id: UUID,
+    service: EmbeddingJobService = Depends(get_embedding_job_service),
+    current_user: User = Depends(require_admin),
+):
+    job = await service.get_job(job_id)
+
+    if job.status not in {"pending", "failed"}:
+        raise AppException(
+            status_code=409,
+            code="EMBEDDING_JOB_NOT_ENQUEUEABLE",
+            message=(
+                "Embedding job cannot be enqueued "
+                f"from status '{job.status}'."
+            ),
+        )
+
+    task = run_embedding_job_task.delay(str(job.id))
+
+    return success_response(
+        data={
+            "job_id": str(job.id),
+            "task_id": task.id,
+            "status": "queued",
+        },
+        message="Embedding job queued successfully.",
     )
