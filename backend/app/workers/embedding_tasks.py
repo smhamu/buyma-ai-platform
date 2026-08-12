@@ -12,9 +12,13 @@ from app.models.embedding_job import EmbeddingJob  # noqa: F401
 from app.models.embedding_model import EmbeddingModel  # noqa: F401
 from app.models.embedding_provider import EmbeddingProvider  # noqa: F401
 from app.repositories.document_chunk_repository import DocumentChunkRepository
+from app.repositories.document_repository import DocumentRepository
 from app.repositories.embedding_job_repository import EmbeddingJobRepository
 from app.repositories.embedding_model_repository import EmbeddingModelRepository
 from app.repositories.embedding_repository import EmbeddingRepository
+from app.services.document_ingestion_status_service import (
+    DocumentIngestionStatusService,
+)
 from app.services.embedding_service import EmbeddingService
 from app.workers.celery_app import celery_app
 
@@ -32,13 +36,25 @@ async def _run_embedding_job(job_id: str):
 
     try:
         async with session_factory() as db:
+            job_repository = EmbeddingJobRepository(db)
+            job = await job_repository.find_by_id(UUID(job_id))
+
+            if job is None:
+                return
+
+            ingestion_status_service = DocumentIngestionStatusService(
+                document_repository=DocumentRepository(db),
+            )
+            await ingestion_status_service.mark_processing(job.document_id)
+
             service = EmbeddingService(
                 embedding_repository=EmbeddingRepository(db),
-                job_repository=EmbeddingJobRepository(db),
+                job_repository=job_repository,
                 chunk_repository=DocumentChunkRepository(db),
                 model_repository=EmbeddingModelRepository(db),
             )
             await service.run_embedding_job(UUID(job_id))
+            await ingestion_status_service.refresh_status(job.document_id)
     finally:
         await engine.dispose()
 

@@ -34,6 +34,7 @@ class DocumentIngestionService:
                 "source_type": payload.source_type,
                 "source_url": payload.source_url,
                 "status": payload.status,
+                "ingestion_status": "pending",
             }
         )
 

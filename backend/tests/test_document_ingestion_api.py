@@ -30,6 +30,7 @@ class FakeIngestionService:
                 source_type=payload.source_type,
                 source_url=payload.source_url,
                 status=payload.status,
+                ingestion_status="pending",
             ),
             "chunks": chunks,
             "embedding_jobs": self.jobs,

@@ -28,3 +28,4 @@ class DocumentResponse(BaseModel):
     source_type: str
     source_url: str | None
     status: str
+    ingestion_status: str
