@@ -96,27 +96,47 @@ async def test_list_knowledge_base_documents_returns_documents():
         ingestion_status="ready",
     )
 
-    class FakeDocumentRepository:
-        async def find_by_knowledge_base_id(self, actual_id):
-            assert actual_id == knowledge_base_id
-            return [document]
-
-    service = SimpleNamespace(get=AsyncMock(return_value=make_knowledge_base()))
-    db = SimpleNamespace()
-
-    from app.api.v1 import knowledge_bases as module
-
-    original_repository = module.DocumentRepository
-    module.DocumentRepository = lambda _: FakeDocumentRepository()
-    try:
-        response = await list_knowledge_base_documents(
-            knowledge_base_id=knowledge_base_id,
-            db=db,
-            service=service,
-            current_user=SimpleNamespace(),
+    service = SimpleNamespace(
+        list_documents=AsyncMock(
+            return_value={
+                "items": [document],
+                "total": 1,
+                "total_pages": 1,
+            }
         )
-    finally:
-        module.DocumentRepository = original_repository
+    )
 
-    service.get.assert_awaited_once_with(knowledge_base_id)
-    assert response["data"][0].knowledge_base_id == knowledge_base_id
+    response = await list_knowledge_base_documents(
+        knowledge_base_id=knowledge_base_id,
+        page=1,
+        page_size=20,
+        q=None,
+        status=None,
+        ingestion_status=None,
+        is_latest=True,
+        source_type=None,
+        sort_by="created_at",
+        sort_order="desc",
+        service=service,
+        current_user=SimpleNamespace(),
+    )
+
+    service.list_documents.assert_awaited_once_with(
+        knowledge_base_id=knowledge_base_id,
+        page=1,
+        page_size=20,
+        q=None,
+        status=None,
+        ingestion_status=None,
+        is_latest=True,
+        source_type=None,
+        sort_by="created_at",
+        sort_order="desc",
+    )
+    assert response["data"]["items"][0]["knowledge_base_id"] == knowledge_base_id
+    assert response["data"]["page"] == 1
+    assert response["data"]["page_size"] == 20
+    assert response["data"]["total"] == 1
+    assert response["data"]["total_pages"] == 1
+    assert response["data"]["sort_by"] == "created_at"
+    assert response["data"]["sort_order"] == "desc"

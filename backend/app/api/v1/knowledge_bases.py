@@ -1,6 +1,7 @@
+from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, require_admin
@@ -15,6 +16,8 @@ from app.schemas.knowledge_base import (
     KnowledgeBaseResponse,
     KnowledgeBaseUpdate,
 )
+from app.schemas.knowledge_base_document import KnowledgeBaseDocumentListResponse
+from app.services.knowledge_base_document_service import KnowledgeBaseDocumentService
 from app.services.knowledge_base_service import KnowledgeBaseService
 
 router = APIRouter(prefix="/knowledge-bases", tags=["Knowledge Bases"])
@@ -24,6 +27,15 @@ def get_knowledge_base_service(
     db: AsyncSession = Depends(get_db),
 ) -> KnowledgeBaseService:
     return KnowledgeBaseService(KnowledgeBaseRepository(db))
+
+
+def get_knowledge_base_document_service(
+    db: AsyncSession = Depends(get_db),
+) -> KnowledgeBaseDocumentService:
+    return KnowledgeBaseDocumentService(
+        knowledge_base_repository=KnowledgeBaseRepository(db),
+        document_repository=DocumentRepository(db),
+    )
 
 
 @router.post("")
@@ -102,20 +114,52 @@ async def delete_knowledge_base(
 @router.get("/{knowledge_base_id}/documents")
 async def list_knowledge_base_documents(
     knowledge_base_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    service: KnowledgeBaseService = Depends(get_knowledge_base_service),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    q: str | None = Query(default=None, min_length=1, max_length=255),
+    status: str | None = Query(default=None),
+    ingestion_status: str | None = Query(default=None),
+    is_latest: bool | None = Query(default=True),
+    source_type: str | None = Query(default=None),
+    sort_by: Literal[
+        "created_at",
+        "updated_at",
+        "title",
+        "version",
+        "ingestion_status",
+    ] = Query(default="created_at"),
+    sort_order: Literal["asc", "desc"] = Query(default="desc"),
+    service: KnowledgeBaseDocumentService = Depends(
+        get_knowledge_base_document_service
+    ),
     current_user: User = Depends(get_current_user),
 ):
-    await service.get(knowledge_base_id)
-    document_repository = DocumentRepository(db)
-    documents = await document_repository.find_by_knowledge_base_id(
-        knowledge_base_id
+    result = await service.list_documents(
+        knowledge_base_id=knowledge_base_id,
+        page=page,
+        page_size=page_size,
+        q=q,
+        status=status,
+        ingestion_status=ingestion_status,
+        is_latest=is_latest,
+        source_type=source_type,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
+    response = KnowledgeBaseDocumentListResponse(
+        items=[
+            DocumentResponse.model_validate(document)
+            for document in result["items"]
+        ],
+        page=page,
+        page_size=page_size,
+        total=result["total"],
+        total_pages=result["total_pages"],
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
 
     return success_response(
-        data=[
-            DocumentResponse.model_validate(document)
-            for document in documents
-        ],
+        data=response.model_dump(),
         message="Knowledge base documents fetched successfully.",
     )
