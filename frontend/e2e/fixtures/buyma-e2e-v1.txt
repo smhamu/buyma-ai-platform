@@ -1,0 +1,4 @@
+BUYMA E2E rule version 1
+
+- Listing titles should be clear and concise.
+- Shipping notes must be reviewed before publishing.

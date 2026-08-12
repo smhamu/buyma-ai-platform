@@ -1,0 +1,5 @@
+BUYMA E2E rule version 2
+
+- Listing titles should be clear, concise, and brand safe.
+- Shipping notes must be reviewed before publishing.
+- Return policy text must be present in the latest document.

@@ -1,0 +1,4 @@
+BUYMA E2E fixture
+
+- Documents must follow the latest version rules.
+- Uploaded content should become searchable after processing.

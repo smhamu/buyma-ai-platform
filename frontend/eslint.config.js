@@ -35,6 +35,9 @@ export default [
         beforeEach: "readonly",
         afterEach: "readonly",
         vi: "readonly",
+        process: "readonly",
+        __dirname: "readonly",
+        Buffer: "readonly",
       },
     },
     plugins: {
@@ -50,6 +53,16 @@ export default [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+    },
+  },
+  {
+    files: ["playwright.config.ts", "e2e/**/*.ts"],
+    languageOptions: {
+      globals: {
+        process: "readonly",
+        __dirname: "readonly",
+        Buffer: "readonly",
+      },
     },
   },
 ];
