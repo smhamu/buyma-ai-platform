@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { ProtectedRoute } from "./components/routing/ProtectedRoute";
 import { PublicOnlyRoute } from "./components/routing/PublicOnlyRoute";
+import { DocumentDetailPage } from "./pages/DocumentDetailPage";
 import { KnowledgeBaseDetailPage } from "./pages/KnowledgeBaseDetailPage";
 import { KnowledgeBaseDocumentsPage } from "./pages/KnowledgeBaseDocumentsPage";
 import { KnowledgeBaseListPage } from "./pages/KnowledgeBaseListPage";
@@ -38,6 +39,10 @@ export function App() {
         <Route
           path="knowledge-bases/:knowledgeBaseId/documents"
           element={<KnowledgeBaseDocumentsPage />}
+        />
+        <Route
+          path="knowledge-bases/:knowledgeBaseId/documents/:documentId"
+          element={<DocumentDetailPage />}
         />
       </Route>
 

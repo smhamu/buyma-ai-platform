@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useSearchParams, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
-import { DocumentStatusBadge } from "../components/ui/DocumentStatusBadge";
-import { Badge } from "../components/ui/Badge";
 import { DocumentUploadPanel } from "../components/documents/DocumentUploadPanel";
+import { Badge } from "../components/ui/Badge";
+import { DocumentStatusBadge } from "../components/ui/DocumentStatusBadge";
 import { ApiClientError } from "../lib/api";
 import {
   fetchKnowledgeBase,
@@ -156,9 +156,7 @@ export function KnowledgeBaseDocumentsPage() {
       const documents = await fetchKnowledgeBaseDocuments(knowledgeBaseId, query);
       setResponse(documents);
     } catch (err) {
-      setError(
-        err instanceof ApiClientError ? err.message : "Retry failed.",
-      );
+      setError(err instanceof ApiClientError ? err.message : "Retry failed.");
     } finally {
       setRetryingId(null);
     }
@@ -321,6 +319,7 @@ export function KnowledgeBaseDocumentsPage() {
                   <DocumentRow
                     key={item.id}
                     item={item}
+                    knowledgeBaseId={knowledgeBaseId}
                     retrying={retryingId === item.id}
                     onRetry={() => void handleRetry(item.id)}
                   />
@@ -338,7 +337,9 @@ export function KnowledgeBaseDocumentsPage() {
                 className="secondary-button"
                 disabled={(response?.page ?? 1) <= 1}
                 onClick={() =>
-                  updateQuery({ page: String(Math.max(1, (response?.page ?? 1) - 1)) })
+                  updateQuery({
+                    page: String(Math.max(1, (response?.page ?? 1) - 1)),
+                  })
                 }
               >
                 Previous
@@ -371,10 +372,12 @@ export function KnowledgeBaseDocumentsPage() {
 
 function DocumentRow({
   item,
+  knowledgeBaseId,
   retrying,
   onRetry,
 }: {
   item: DocumentItem;
+  knowledgeBaseId?: string;
   retrying: boolean;
   onRetry: () => void;
 }) {
@@ -396,9 +399,12 @@ function DocumentRow({
       <td>{item.status}</td>
       <td>
         <div className="row-actions">
-          <button className="secondary-button" disabled>
+          <Link
+            className="secondary-button secondary-button--link"
+            to={`/knowledge-bases/${knowledgeBaseId}/documents/${item.id}`}
+          >
             Detail
-          </button>
+          </Link>
           <button className="secondary-button" disabled>
             Versions
           </button>

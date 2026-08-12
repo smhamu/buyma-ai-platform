@@ -398,6 +398,146 @@ input {
   gap: 8px;
 }
 
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-row__label {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.detail-row__value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail-row__value--mono {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 13px;
+}
+
+.version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.version-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.version-item__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.version-item__meta {
+  min-width: 0;
+}
+
+.version-item__sub {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.version-item__description {
+  margin-top: 8px;
+  color: #4b5563;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.diff-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.diff-pill {
+  padding: 6px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.diff-pill--added {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.diff-pill--removed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.diff-view {
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.diff-code {
+  margin: 0;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 13px;
+}
+
+.diff-line {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 8px;
+  padding: 2px 0;
+  white-space: pre-wrap;
+}
+
+.diff-line--added {
+  background: #f0fdf4;
+}
+
+.diff-line--removed {
+  background: #fef2f2;
+}
+
+.diff-line__prefix {
+  font-weight: 700;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
 .page-not-found {
   margin: 24px;
 }
@@ -409,5 +549,16 @@ input {
 
   .sidebar {
     padding-bottom: 12px;
+  }
+}
+
+@media (max-width: 700px) {
+  .detail-row {
+    grid-template-columns: 1fr;
+  }
+
+  .version-item {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
