@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_admin
@@ -18,12 +18,16 @@ from app.schemas.document_ingestion import (
     DocumentIngestionRequest,
     DocumentIngestionResponse,
 )
+from app.schemas.document_file_ingestion import DocumentFileIngestionResponse
 from app.schemas.document_ingestion_retry import DocumentIngestionRetryResponse
 from app.schemas.embedding_job import EmbeddingJobResponse
 from app.services.document_ingestion_retry_service import (
     DocumentIngestionRetryService,
 )
 from app.services.document_ingestion_service import DocumentIngestionService
+from app.services.document_file_ingestion_service import (
+    DocumentFileIngestionService,
+)
 from app.services.embedding_queue_service import EmbeddingQueueService
 
 router = APIRouter(prefix="/documents", tags=["Document Ingestion"])
@@ -56,6 +60,14 @@ def get_document_ingestion_retry_service(
     )
 
 
+def get_document_file_ingestion_service(
+    ingestion_service: DocumentIngestionService = Depends(
+        get_document_ingestion_service
+    ),
+) -> DocumentFileIngestionService:
+    return DocumentFileIngestionService(ingestion_service)
+
+
 @router.post("/ingest")
 async def ingest_document(
     payload: DocumentIngestionRequest,
@@ -86,6 +98,54 @@ async def ingest_document(
     return success_response(
         data=response.model_dump(),
         message="Document ingestion completed successfully.",
+    )
+
+
+@router.post("/ingest-file")
+async def ingest_document_file(
+    file: UploadFile = File(...),
+    embedding_model_id: UUID = Form(...),
+    knowledge_base_id: UUID | None = Form(default=None),
+    chunk_size: int = Form(default=500, ge=100, le=5000),
+    auto_enqueue: bool = Form(default=True),
+    service: DocumentFileIngestionService = Depends(
+        get_document_file_ingestion_service
+    ),
+    queue_service: EmbeddingQueueService = Depends(get_embedding_queue_service),
+    current_user: User = Depends(require_admin),
+):
+    file_content = await file.read()
+    result = await service.ingest_file(
+        filename=file.filename or "document",
+        file_content=file_content,
+        embedding_model_id=embedding_model_id,
+        knowledge_base_id=knowledge_base_id,
+        chunk_size=chunk_size,
+    )
+
+    task_ids: list[str] = []
+    if auto_enqueue:
+        for job in result["embedding_jobs"]:
+            task_ids.append(queue_service.enqueue(job.id))
+
+    response = DocumentFileIngestionResponse(
+        filename=result["filename"],
+        file_size=result["file_size"],
+        document=DocumentResponse.model_validate(result["document"]),
+        chunks=[
+            DocumentChunkResponse.model_validate(chunk)
+            for chunk in result["chunks"]
+        ],
+        embedding_jobs=[
+            EmbeddingJobResponse.model_validate(job)
+            for job in result["embedding_jobs"]
+        ],
+        task_ids=task_ids,
+    )
+
+    return success_response(
+        data=response.model_dump(),
+        message="Document file ingestion completed successfully.",
     )
 
 

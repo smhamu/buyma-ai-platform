@@ -11,6 +11,7 @@ from app.models.embedding import Embedding  # noqa: F401
 from app.models.embedding_job import EmbeddingJob  # noqa: F401
 from app.models.embedding_model import EmbeddingModel  # noqa: F401
 from app.models.embedding_provider import EmbeddingProvider  # noqa: F401
+from app.models.knowledge_base import KnowledgeBase  # noqa: F401
 from app.repositories.document_chunk_repository import DocumentChunkRepository
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.embedding_job_repository import EmbeddingJobRepository
