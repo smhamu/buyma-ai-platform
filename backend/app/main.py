@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -20,13 +21,19 @@ from app.api.v1.prompt_builder import router as prompt_builder_router
 from app.api.v1.rag import router as rag_router
 from app.api.v1.knowledge_bases import router as knowledge_bases_router
 from app.api.v1.document_versions import router as document_versions_router
+from app.common.exception_handlers import validation_exception_handler
 
 
 setup_logging()
 
 app = FastAPI(
-    title="BUYMA AI Platform",
-    version="0.1.0",
+    title="BUYMA AI Platform API",
+    description=(
+        "Backend API for BUYMA AI Platform. "
+        "Provides authentication, knowledge base management, "
+        "document ingestion, embeddings, vector search and RAG."
+    ),
+    version="1.0.0",
 )
 
 cors_allowed_origins = [
@@ -52,6 +59,12 @@ async def app_exception_handler(request: Request, exc: AppException):
     )
 
 
+app.add_exception_handler(
+    RequestValidationError,
+    validation_exception_handler,
+)
+
+
 @app.exception_handler(Exception)
 async def unexpected_exception_handler(request: Request, exc: Exception):
     logger.exception("Unexpected error occurred")
@@ -65,7 +78,7 @@ async def unexpected_exception_handler(request: Request, exc: Exception):
     )
 
 
-@app.get("/health")
+@app.get("/health", tags=["Health"], summary="Health check")
 def health_check():
     return {"status": "ok"}
 

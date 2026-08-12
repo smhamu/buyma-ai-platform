@@ -9,7 +9,8 @@ from app.core.database import get_db
 from app.models.user import User
 from app.repositories.embedding_model_repository import EmbeddingModelRepository
 from app.repositories.embedding_repository import EmbeddingRepository
-from app.schemas.prompt_builder import PromptBuildRequest
+from app.schemas.common import ErrorResponse, SuccessResponse
+from app.schemas.prompt_builder import PromptBuildRequest, PromptBuildResponse
 from app.services.prompt_builder_service import PromptBuilderService
 from app.services.resource_authorization_service import ResourceAuthorizationService
 from app.services.retriever_service import RetrieverService
@@ -31,7 +32,16 @@ def get_prompt_builder_service(
     return PromptBuilderService(retriever_service=retriever_service)
 
 
-@router.post("/build")
+@router.post(
+    "/build",
+    response_model=SuccessResponse[PromptBuildResponse],
+    responses={422: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    summary="Build prompt from retrieved context",
+    description=(
+        "Retrieves relevant chunks from the specified Knowledge Base and "
+        "builds prompt messages for the chat model."
+    ),
+)
 async def build_prompt(
     payload: PromptBuildRequest,
     service: PromptBuilderService = Depends(get_prompt_builder_service),

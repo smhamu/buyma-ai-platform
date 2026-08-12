@@ -9,7 +9,8 @@ from app.core.database import get_db
 from app.models.user import User
 from app.repositories.embedding_model_repository import EmbeddingModelRepository
 from app.repositories.embedding_repository import EmbeddingRepository
-from app.schemas.rag import RAGQueryRequest
+from app.schemas.common import ErrorResponse, SuccessResponse
+from app.schemas.rag import RAGQueryRequest, RAGQueryResponse
 from app.services.prompt_builder_service import PromptBuilderService
 from app.services.rag_service import RAGService
 from app.services.resource_authorization_service import ResourceAuthorizationService
@@ -35,7 +36,16 @@ def get_rag_service(
     return RAGService(prompt_builder_service=prompt_builder_service)
 
 
-@router.post("/query")
+@router.post(
+    "/query",
+    response_model=SuccessResponse[RAGQueryResponse],
+    responses={422: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    summary="Run RAG query",
+    description=(
+        "Runs retrieval-augmented generation against the specified "
+        "Knowledge Base and returns answer, context, and source chunks."
+    ),
+)
 async def rag_query(
     payload: RAGQueryRequest,
     service: RAGService = Depends(get_rag_service),

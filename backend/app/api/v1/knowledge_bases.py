@@ -14,12 +14,14 @@ from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.repositories.knowledge_base_stats_repository import (
     KnowledgeBaseStatsRepository,
 )
+from app.schemas.common import ErrorResponse, SuccessResponse
 from app.schemas.document import DocumentResponse
 from app.schemas.knowledge_base import (
     KnowledgeBaseCreate,
     KnowledgeBaseResponse,
     KnowledgeBaseUpdate,
 )
+from app.schemas.knowledge_base_stats import KnowledgeBaseStatsResponse
 from app.schemas.knowledge_base_document import KnowledgeBaseDocumentListResponse
 from app.services.knowledge_base_document_service import KnowledgeBaseDocumentService
 from app.services.knowledge_base_service import KnowledgeBaseService
@@ -143,7 +145,16 @@ async def delete_knowledge_base(
     )
 
 
-@router.get("/{knowledge_base_id}/stats")
+@router.get(
+    "/{knowledge_base_id}/stats",
+    response_model=SuccessResponse[KnowledgeBaseStatsResponse],
+    responses={404: {"model": ErrorResponse}},
+    summary="Get Knowledge Base statistics",
+    description=(
+        "Returns document, chunk, embedding, and ingestion status counts "
+        "for the specified Knowledge Base."
+    ),
+)
 async def get_knowledge_base_stats(
     knowledge_base_id: UUID,
     service: KnowledgeBaseStatsService = Depends(get_knowledge_base_stats_service),

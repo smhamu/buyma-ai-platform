@@ -13,6 +13,7 @@ from app.repositories.document_repository import DocumentRepository
 from app.repositories.embedding_job_repository import EmbeddingJobRepository
 from app.repositories.embedding_model_repository import EmbeddingModelRepository
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
+from app.schemas.common import ErrorResponse, SuccessResponse
 from app.schemas.document import DocumentResponse
 from app.schemas.document_chunk import DocumentChunkResponse
 from app.schemas.document_ingestion import (
@@ -121,7 +122,21 @@ async def ingest_document(
     )
 
 
-@router.post("/ingest-file")
+@router.post(
+    "/ingest-file",
+    response_model=SuccessResponse[DocumentFileIngestionResponse],
+    responses={
+        404: {"model": ErrorResponse},
+        413: {"model": ErrorResponse},
+        415: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+    },
+    summary="Upload and ingest document file",
+    description=(
+        "Uploads a PDF, TXT, or Markdown file, extracts text, creates "
+        "chunks and embedding jobs, and optionally queues embedding generation."
+    ),
+)
 async def ingest_document_file(
     file: UploadFile = File(...),
     embedding_model_id: UUID = Form(...),

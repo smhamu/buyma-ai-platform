@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.models.user import User
 from app.repositories.embedding_model_repository import EmbeddingModelRepository
 from app.repositories.embedding_repository import EmbeddingRepository
+from app.schemas.common import ErrorResponse, SuccessResponse
 from app.schemas.vector_search import VectorSearchRequest, VectorSearchResult
 from app.services.resource_authorization_service import ResourceAuthorizationService
 from app.services.vector_search_service import VectorSearchService
@@ -25,7 +26,16 @@ def get_vector_search_service(
     )
 
 
-@router.post("/vector")
+@router.post(
+    "/vector",
+    response_model=SuccessResponse[list[VectorSearchResult]],
+    responses={422: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    summary="Run vector similarity search",
+    description=(
+        "Performs vector similarity search on embeddings in the specified "
+        "Knowledge Base and returns matching chunks."
+    ),
+)
 async def vector_search(
     payload: VectorSearchRequest,
     service: VectorSearchService = Depends(get_vector_search_service),

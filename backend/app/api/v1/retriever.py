@@ -9,7 +9,8 @@ from app.core.database import get_db
 from app.models.user import User
 from app.repositories.embedding_model_repository import EmbeddingModelRepository
 from app.repositories.embedding_repository import EmbeddingRepository
-from app.schemas.retriever import RetrieverRequest
+from app.schemas.common import ErrorResponse, SuccessResponse
+from app.schemas.retriever import RetrieverRequest, RetrieverResponse
 from app.services.resource_authorization_service import ResourceAuthorizationService
 from app.services.retriever_service import RetrieverService
 from app.services.vector_search_service import VectorSearchService
@@ -27,7 +28,16 @@ def get_retriever_service(
     return RetrieverService(vector_search_service=vector_search_service)
 
 
-@router.post("/search")
+@router.post(
+    "/search",
+    response_model=SuccessResponse[RetrieverResponse],
+    responses={422: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    summary="Retrieve context chunks",
+    description=(
+        "Searches the specified Knowledge Base and returns retrieved chunks "
+        "plus combined context for downstream prompt construction."
+    ),
+)
 async def retrieve(
     payload: RetrieverRequest,
     service: RetrieverService = Depends(get_retriever_service),
