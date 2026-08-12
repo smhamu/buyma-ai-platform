@@ -2,9 +2,6 @@ import asyncio
 from uuid import UUID
 
 from celery.exceptions import MaxRetriesExceededError
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlalchemy.pool import NullPool
-
 from app.common.exceptions import (
     AIProviderRateLimitException,
     AIProviderTimeoutException,
@@ -28,6 +25,7 @@ from app.services.document_ingestion_status_service import (
 )
 from app.services.embedding_service import EmbeddingService
 from app.workers.celery_app import celery_app
+from app.workers.database import create_worker_session
 
 RETRYABLE_EXCEPTIONS = (
     AIProviderRateLimitException,
@@ -41,16 +39,7 @@ def is_retryable_exception(exc: Exception) -> bool:
 
 
 async def _create_worker_session():
-    engine = create_async_engine(
-        settings.database_url,
-        echo=True,
-        poolclass=NullPool,
-    )
-    session_factory = async_sessionmaker(
-        bind=engine,
-        expire_on_commit=False,
-    )
-    return session_factory(), engine
+    return await create_worker_session()
 
 
 async def _run_embedding_job(job_id: str):

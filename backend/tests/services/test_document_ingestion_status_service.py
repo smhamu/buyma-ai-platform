@@ -29,6 +29,7 @@ class FakeDb:
     def __init__(self, statuses):
         self.statuses = statuses
         self.commit_count = 0
+        self.flush_count = 0
         self.refreshed = []
 
     async def execute(self, statement):
@@ -36,6 +37,9 @@ class FakeDb:
 
     async def commit(self):
         self.commit_count += 1
+
+    async def flush(self):
+        self.flush_count += 1
 
     async def refresh(self, obj):
         self.refreshed.append(obj)

@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -66,6 +67,42 @@ class EmbeddingJobRepository(BaseRepository[EmbeddingJob]):
             .values(
                 status="processing",
                 error_message=None,
+            )
+        )
+        await self.db.flush()
+        return result.rowcount == 1
+
+    async def find_stale_processing_jobs(
+        self,
+        stale_before: datetime,
+        limit: int = 100,
+    ) -> list[EmbeddingJob]:
+        result = await self.db.execute(
+            select(EmbeddingJob)
+            .where(
+                EmbeddingJob.status == "processing",
+                EmbeddingJob.updated_at < stale_before,
+            )
+            .order_by(EmbeddingJob.updated_at.asc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+    async def reset_stale_job_to_pending(
+        self,
+        job_id: UUID,
+        stale_before: datetime,
+    ) -> bool:
+        result = await self.db.execute(
+            update(EmbeddingJob)
+            .where(
+                EmbeddingJob.id == job_id,
+                EmbeddingJob.status == "processing",
+                EmbeddingJob.updated_at < stale_before,
+            )
+            .values(
+                status="pending",
+                error_message="Recovered from stale processing state.",
             )
         )
         await self.db.flush()

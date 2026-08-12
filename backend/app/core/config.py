@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     openai_chat_model: str | None = None
     celery_broker_url: str = "redis://redis:6379/0"
     celery_result_backend: str = "redis://redis:6379/1"
+    embedding_job_stale_minutes: int = 10
+    embedding_recovery_batch_size: int = 100
     
     model_config = SettingsConfigDict(
         env_file=get_env_file(),

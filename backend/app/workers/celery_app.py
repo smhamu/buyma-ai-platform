@@ -9,6 +9,7 @@ celery_app = Celery(
     backend=settings.celery_result_backend,
     include=[
         "app.workers.embedding_tasks",
+        "app.workers.embedding_recovery_tasks",
     ],
 )
 
@@ -24,3 +25,10 @@ celery_app.conf.update(
     task_soft_time_limit=120,
     task_time_limit=180,
 )
+
+celery_app.conf.beat_schedule = {
+    "recover-stale-embedding-jobs": {
+        "task": "embedding.recover_stale_jobs",
+        "schedule": 60.0,
+    },
+}

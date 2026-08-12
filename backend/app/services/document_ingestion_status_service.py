@@ -24,6 +24,12 @@ class DocumentIngestionStatusService:
         return document
 
     async def refresh_status(self, document_id: UUID):
+        document = await self.refresh_status_in_transaction(document_id)
+        await self.document_repository.db.commit()
+        await self.document_repository.db.refresh(document)
+        return document
+
+    async def refresh_status_in_transaction(self, document_id: UUID):
         document = await self.document_repository.find_by_id(document_id)
 
         if document is None:
@@ -47,7 +53,5 @@ class DocumentIngestionStatusService:
         else:
             document.ingestion_status = "pending"
 
-        await self.document_repository.db.commit()
-        await self.document_repository.db.refresh(document)
-
+        await self.document_repository.db.flush()
         return document
