@@ -8,6 +8,7 @@ from app.schemas.embedding_job import EmbeddingJobResponse
 
 
 class DocumentIngestionRequest(BaseModel):
+    knowledge_base_id: UUID | None = None
     title: str
     content: str
     source_type: str = "manual"

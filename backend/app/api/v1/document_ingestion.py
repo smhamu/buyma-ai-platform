@@ -11,6 +11,7 @@ from app.repositories.document_chunk_repository import DocumentChunkRepository
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.embedding_job_repository import EmbeddingJobRepository
 from app.repositories.embedding_model_repository import EmbeddingModelRepository
+from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.schemas.document import DocumentResponse
 from app.schemas.document_chunk import DocumentChunkResponse
 from app.schemas.document_ingestion import (
@@ -36,6 +37,7 @@ def get_document_ingestion_service(
         chunk_repository=DocumentChunkRepository(db),
         embedding_job_repository=EmbeddingJobRepository(db),
         embedding_model_repository=EmbeddingModelRepository(db),
+        knowledge_base_repository=KnowledgeBaseRepository(db),
     )
 
 

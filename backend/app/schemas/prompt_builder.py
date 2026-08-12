@@ -8,6 +8,7 @@ from app.schemas.retriever import RetrievedChunk
 class PromptBuildRequest(BaseModel):
     query: str
     embedding_model_id: UUID
+    knowledge_base_id: UUID | None = None
     top_k: int = 5
     distance_threshold: float | None = 0.5
 

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -17,6 +17,12 @@ class Document(Base):
     )
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)
+    knowledge_base_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("knowledge_bases.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     content: Mapped[str] = mapped_column(Text, nullable=False)
     source_type: Mapped[str] = mapped_column(String(50), nullable=False, default="manual")
     source_url: Mapped[str | None] = mapped_column(Text, nullable=True)

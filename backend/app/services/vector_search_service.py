@@ -37,4 +37,5 @@ class VectorSearchService:
             embedding_model_id=payload.embedding_model_id,
             top_k=payload.top_k,
             distance_threshold=payload.distance_threshold,
+            knowledge_base_id=payload.knowledge_base_id,
         )

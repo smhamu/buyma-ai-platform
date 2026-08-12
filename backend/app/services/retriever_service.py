@@ -16,6 +16,7 @@ class RetrieverService:
             VectorSearchRequest(
                 query=payload.query,
                 embedding_model_id=payload.embedding_model_id,
+                knowledge_base_id=payload.knowledge_base_id,
                 top_k=payload.top_k,
                 distance_threshold=payload.distance_threshold,
             )

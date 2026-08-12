@@ -38,15 +38,18 @@ async def test_retrieve_builds_context_and_removes_duplicate_chunks():
         )
     )
     service = RetrieverService(vector_search_service=vector_search_service)
+    knowledge_base_id = uuid4()
 
     result = await service.retrieve(
         RetrieverRequest(
             query="Question",
             embedding_model_id=uuid4(),
+            knowledge_base_id=knowledge_base_id,
             top_k=3,
         )
     )
 
+    assert vector_search_service.search.await_args.args[0].knowledge_base_id == knowledge_base_id
     assert [chunk.chunk_id for chunk in result.chunks] == [chunk_id, unique_chunk_id]
     assert result.context == "[Context 1]\nFirst chunk\n\n[Context 2]\nSecond chunk"
 

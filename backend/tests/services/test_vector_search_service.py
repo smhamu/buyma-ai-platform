@@ -35,6 +35,7 @@ async def test_search_returns_results_and_forwards_top_k():
     payload = VectorSearchRequest(
         query="BUYMA rules",
         embedding_model_id=model_id,
+        knowledge_base_id=uuid4(),
         top_k=7,
         distance_threshold=0.25,
     )
@@ -59,6 +60,7 @@ async def test_search_returns_results_and_forwards_top_k():
         embedding_model_id=model_id,
         top_k=7,
         distance_threshold=0.25,
+        knowledge_base_id=payload.knowledge_base_id,
     )
 
 

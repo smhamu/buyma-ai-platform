@@ -1,8 +1,11 @@
-from app.common.exceptions import NotFoundException
+from fastapi import status
+
+from app.common.exceptions import AppException, NotFoundException
 from app.repositories.document_chunk_repository import DocumentChunkRepository
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.embedding_job_repository import EmbeddingJobRepository
 from app.repositories.embedding_model_repository import EmbeddingModelRepository
+from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.schemas.document_ingestion import DocumentIngestionRequest
 
 
@@ -13,13 +16,30 @@ class DocumentIngestionService:
         chunk_repository: DocumentChunkRepository,
         embedding_job_repository: EmbeddingJobRepository,
         embedding_model_repository: EmbeddingModelRepository,
+        knowledge_base_repository: KnowledgeBaseRepository,
     ):
         self.document_repository = document_repository
         self.chunk_repository = chunk_repository
         self.embedding_job_repository = embedding_job_repository
         self.embedding_model_repository = embedding_model_repository
+        self.knowledge_base_repository = knowledge_base_repository
 
     async def ingest(self, payload: DocumentIngestionRequest):
+        if payload.knowledge_base_id is not None:
+            knowledge_base = await self.knowledge_base_repository.find_by_id(
+                payload.knowledge_base_id
+            )
+
+            if knowledge_base is None:
+                raise NotFoundException("KnowledgeBase")
+
+            if not knowledge_base.is_active:
+                raise AppException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    code="KNOWLEDGE_BASE_INACTIVE",
+                    message="Knowledge base is inactive.",
+                )
+
         embedding_model = await self.embedding_model_repository.find_by_id(
             payload.embedding_model_id
         )
@@ -29,6 +49,7 @@ class DocumentIngestionService:
 
         document = await self.document_repository.create(
             {
+                "knowledge_base_id": payload.knowledge_base_id,
                 "title": payload.title,
                 "content": payload.content,
                 "source_type": payload.source_type,

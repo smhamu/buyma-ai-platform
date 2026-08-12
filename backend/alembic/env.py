@@ -15,6 +15,7 @@ from app.models.embedding_provider import EmbeddingProvider
 from app.models.embedding_model import EmbeddingModel
 from app.models.embedding_job import EmbeddingJob
 from app.models.embedding import Embedding
+from app.models.knowledge_base import KnowledgeBase
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

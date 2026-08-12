@@ -25,6 +25,7 @@ class FakeIngestionService:
         return {
             "document": SimpleNamespace(
                 id=document_id,
+                knowledge_base_id=payload.knowledge_base_id,
                 title=payload.title,
                 content=payload.content,
                 source_type=payload.source_type,

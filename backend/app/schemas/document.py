@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class DocumentCreate(BaseModel):
+    knowledge_base_id: UUID | None = None
     title: str
     content: str
     source_type: str = "manual"
@@ -12,6 +13,7 @@ class DocumentCreate(BaseModel):
 
 
 class DocumentUpdate(BaseModel):
+    knowledge_base_id: UUID | None = None
     title: str | None = None
     content: str | None = None
     source_type: str | None = None
@@ -23,6 +25,7 @@ class DocumentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    knowledge_base_id: UUID | None
     title: str
     content: str
     source_type: str

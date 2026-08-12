@@ -35,6 +35,7 @@ async def test_ingest_creates_document_chunks_and_embedding_jobs():
         chunk_repository=chunk_repository,
         embedding_job_repository=embedding_job_repository,
         embedding_model_repository=embedding_model_repository,
+        knowledge_base_repository=FakeRepository(),
     )
 
     result = await service.ingest(
@@ -65,6 +66,7 @@ async def test_ingest_raises_when_embedding_model_does_not_exist():
         chunk_repository=FakeRepository(),
         embedding_job_repository=FakeRepository(),
         embedding_model_repository=FakeRepository(model=None),
+        knowledge_base_repository=FakeRepository(),
     )
 
     with pytest.raises(NotFoundException):
@@ -75,6 +77,55 @@ async def test_ingest_raises_when_embedding_model_does_not_exist():
                 embedding_model_id=uuid4(),
             )
         )
+
+
+@pytest.mark.asyncio
+async def test_ingest_raises_when_knowledge_base_does_not_exist():
+    service = DocumentIngestionService(
+        document_repository=FakeRepository(),
+        chunk_repository=FakeRepository(),
+        embedding_job_repository=FakeRepository(),
+        embedding_model_repository=FakeRepository(model=SimpleNamespace()),
+        knowledge_base_repository=FakeRepository(model=None),
+    )
+
+    with pytest.raises(NotFoundException) as exc_info:
+        await service.ingest(
+            DocumentIngestionRequest(
+                knowledge_base_id=uuid4(),
+                title="Missing KB",
+                content="content",
+                embedding_model_id=uuid4(),
+            )
+        )
+
+    assert exc_info.value.code == "KNOWLEDGEBASE_NOT_FOUND"
+
+
+@pytest.mark.asyncio
+async def test_ingest_raises_when_knowledge_base_is_inactive():
+    service = DocumentIngestionService(
+        document_repository=FakeRepository(),
+        chunk_repository=FakeRepository(),
+        embedding_job_repository=FakeRepository(),
+        embedding_model_repository=FakeRepository(model=SimpleNamespace()),
+        knowledge_base_repository=FakeRepository(
+            model=SimpleNamespace(is_active=False)
+        ),
+    )
+
+    with pytest.raises(Exception) as exc_info:
+        await service.ingest(
+            DocumentIngestionRequest(
+                knowledge_base_id=uuid4(),
+                title="Inactive KB",
+                content="content",
+                embedding_model_id=uuid4(),
+            )
+        )
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.code == "KNOWLEDGE_BASE_INACTIVE"
 
 
 def test_ingestion_request_validates_chunk_size():
