@@ -2,6 +2,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
+import {
+  fetchEmbeddingModels,
+  fetchKnowledgeBase,
+  fetchKnowledgeBaseDocuments,
+  retryDocumentIngestion,
+} from "../modules/knowledge-bases/api";
 import { KnowledgeBaseDocumentsPage } from "./KnowledgeBaseDocumentsPage";
 
 vi.mock("../modules/knowledge-bases/api", () => ({
@@ -11,13 +17,6 @@ vi.mock("../modules/knowledge-bases/api", () => ({
   uploadKnowledgeBaseDocument: vi.fn(),
   retryDocumentIngestion: vi.fn(),
 }));
-
-import {
-  fetchKnowledgeBase,
-  fetchKnowledgeBaseDocuments,
-  fetchEmbeddingModels,
-  retryDocumentIngestion,
-} from "../modules/knowledge-bases/api";
 
 describe("KnowledgeBaseDocumentsPage", () => {
   it("renders document table", async () => {
@@ -68,8 +67,8 @@ describe("KnowledgeBaseDocumentsPage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Shipping Rule")).toBeInTheDocument();
-      expect(screen.getByText("shipping.pdf")).toBeInTheDocument();
+      expect(screen.getAllByText("Shipping Rule").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("shipping.pdf").length).toBeGreaterThan(0);
     });
   });
 
@@ -170,10 +169,10 @@ describe("KnowledgeBaseDocumentsPage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Failed Doc")).toBeInTheDocument();
+      expect(screen.getAllByText("Failed Doc").length).toBeGreaterThan(0);
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Retry" })[0]);
 
     await waitFor(() => {
       expect(retryDocumentIngestion).toHaveBeenCalledWith("doc-1");
@@ -226,7 +225,11 @@ describe("KnowledgeBaseDocumentsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Upload Document" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Upload a PDF, TXT, or Markdown file into this Knowledge Base.")).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "Upload a PDF, TXT, or Markdown file into this Knowledge Base.",
+        ),
+      ).toBeInTheDocument();
     });
   });
 });

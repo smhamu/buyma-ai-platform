@@ -10,7 +10,7 @@ export function AppLayout() {
       <aside className="sidebar">
         <div className="sidebar__brand">
           <div className="sidebar__title">BUYMA AI Platform</div>
-          <div className="sidebar__subtitle">Admin MVP</div>
+          <div className="sidebar__subtitle">Admin Console MVP</div>
         </div>
 
         <nav className="sidebar__nav" aria-label="Main navigation">
@@ -23,13 +23,13 @@ export function AppLayout() {
             Knowledge Bases
           </NavLink>
           <button className="sidebar__link sidebar__link--disabled" disabled>
-            Documents
+            Documents (Coming soon)
           </button>
           <button className="sidebar__link sidebar__link--disabled" disabled>
-            RAG（準備中）
+            RAG (Coming soon)
           </button>
           <button className="sidebar__link sidebar__link--disabled" disabled>
-            Settings（準備中）
+            Settings (Coming soon)
           </button>
         </nav>
       </aside>
@@ -37,10 +37,10 @@ export function AppLayout() {
       <div className="app-main">
         <header className="app-header">
           <div>
-            <div className="app-header__title">管理画面</div>
+            <div className="app-header__title">Management Console</div>
             {user ? (
               <div className="app-header__meta">
-                {user.username} / {user.email}
+                {user.username} · {user.email}
               </div>
             ) : null}
           </div>
@@ -50,7 +50,9 @@ export function AppLayout() {
         </header>
 
         <main className="content">
-          <Outlet />
+          <div className="content__inner">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

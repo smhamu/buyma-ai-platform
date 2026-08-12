@@ -2,13 +2,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
+import { fetchKnowledgeBases } from "../modules/knowledge-bases/api";
 import { KnowledgeBaseListPage } from "./KnowledgeBaseListPage";
 
 vi.mock("../modules/knowledge-bases/api", () => ({
   fetchKnowledgeBases: vi.fn(),
 }));
-
-import { fetchKnowledgeBases } from "../modules/knowledge-bases/api";
 
 describe("KnowledgeBaseListPage", () => {
   it("shows empty state", async () => {
@@ -21,9 +20,7 @@ describe("KnowledgeBaseListPage", () => {
     );
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Knowledge Base がまだありません"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("No Knowledge Bases yet")).toBeInTheDocument();
     });
   });
 

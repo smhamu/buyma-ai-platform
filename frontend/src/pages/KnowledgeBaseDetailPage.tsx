@@ -51,7 +51,7 @@ export function KnowledgeBaseDetailPage() {
             setError(
               err instanceof ApiClientError
                 ? err.message
-                : "Knowledge Base詳細の取得に失敗しました。",
+                : "Failed to load Knowledge Base detail.",
             );
           }
         }
@@ -70,16 +70,16 @@ export function KnowledgeBaseDetailPage() {
   }, [knowledgeBaseId]);
 
   if (isLoading) {
-    return <div className="page-status">Knowledge Base詳細を読み込み中...</div>;
+    return <div className="page-status">Loading Knowledge Base detail...</div>;
   }
 
   if (notFound) {
     return (
       <div className="panel panel--empty">
-        <h1>Knowledge Base が見つかりません</h1>
-        <p>存在しないか、アクセス権がありません。</p>
+        <h1>Knowledge Base not found</h1>
+        <p>The Knowledge Base does not exist or you do not have access.</p>
         <Link className="text-link" to="/knowledge-bases">
-          一覧へ戻る
+          Back to Knowledge Bases
         </Link>
       </div>
     );
@@ -88,7 +88,7 @@ export function KnowledgeBaseDetailPage() {
   if (error || !knowledgeBase || !stats) {
     return (
       <div className="panel panel--error">
-        <h1>詳細の取得に失敗しました</h1>
+        <h1>Failed to load Knowledge Base detail</h1>
         <p>{error || "Unknown error"}</p>
       </div>
     );
@@ -102,7 +102,7 @@ export function KnowledgeBaseDetailPage() {
             ← Knowledge Bases
           </Link>
           <h1>{knowledgeBase.name}</h1>
-          <p>{knowledgeBase.description || "説明は未設定です。"}</p>
+          <p>{knowledgeBase.description || "No description provided."}</p>
         </div>
         <Badge tone={knowledgeBase.is_active ? "success" : "muted"}>
           {knowledgeBase.is_active ? "Active" : "Inactive"}
@@ -113,12 +113,12 @@ export function KnowledgeBaseDetailPage() {
         <StatusCard
           label="Documents"
           value={stats.document_count}
-          helper="全バージョンを含む文書数"
+          helper="All document versions"
         />
         <StatusCard
-          label="Latest Documents"
+          label="Latest"
           value={stats.latest_document_count}
-          helper="最新バージョンのみ"
+          helper="Latest versions only"
         />
         <StatusCard label="Ready" value={stats.ready_count} />
         <StatusCard label="Pending" value={stats.pending_count} />
@@ -130,7 +130,10 @@ export function KnowledgeBaseDetailPage() {
 
       <div className="panel">
         <h2>Documents</h2>
-        <p>Knowledge Base 配下の Document 一覧と Upload 管理へ進めます。</p>
+        <p>
+          Open the document list to review files, retry failed ingestion jobs, and
+          inspect version history.
+        </p>
         <Link
           className="secondary-button secondary-button--link"
           to={`/knowledge-bases/${knowledgeBase.id}/documents`}

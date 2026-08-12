@@ -262,23 +262,21 @@ export function DocumentDetailPage() {
                 .slice()
                 .sort((a, b) => b.version - a.version)
                 .map((version) => (
-                    <div key={version.id} className="version-item">
-                      <div className="version-item__meta">
-                        <div className="version-item__title">
-                          v{version.version}
-                          {version.is_latest ? (
-                          <Badge tone="success">Latest</Badge>
-                        ) : null}
+                  <div key={version.id} className="version-item">
+                    <div className="version-item__meta">
+                      <div className="version-item__title">
+                        v{version.version}
+                        {version.is_latest ? <Badge tone="success">Latest</Badge> : null}
                       </div>
-                        <div className="version-item__sub">
-                          <DocumentStatusBadge status={version.ingestion_status} />
-                          <Badge tone="neutral">{version.source_type}</Badge>
-                        </div>
-                        <div className="version-item__description">
-                          <div>{version.title}</div>
-                          <div>{version.original_filename ?? "-"}</div>
-                        </div>
+                      <div className="version-item__sub">
+                        <DocumentStatusBadge status={version.ingestion_status} />
+                        <Badge tone="neutral">{version.source_type}</Badge>
                       </div>
+                      <div className="version-item__description">
+                        <div>{version.title}</div>
+                        <div>{version.original_filename ?? "-"}</div>
+                      </div>
+                    </div>
                     <div className="row-actions">
                       <button
                         className="secondary-button"

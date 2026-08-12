@@ -221,6 +221,7 @@ export function KnowledgeBaseDocumentsPage() {
           />
           <select
             className="form-field__input"
+            aria-label="Filter by ingestion status"
             value={searchParams.get("ingestion_status") ?? "all"}
             onChange={(event) =>
               updateQuery({
@@ -237,6 +238,7 @@ export function KnowledgeBaseDocumentsPage() {
           </select>
           <select
             className="form-field__input"
+            aria-label="Filter by source type"
             value={searchParams.get("source_type") ?? "all"}
             onChange={(event) =>
               updateQuery({
@@ -251,6 +253,7 @@ export function KnowledgeBaseDocumentsPage() {
           </select>
           <select
             className="form-field__input"
+            aria-label="Filter by latest version"
             value={searchParams.get("is_latest") ?? "true"}
             onChange={(event) =>
               updateQuery({
@@ -264,6 +267,7 @@ export function KnowledgeBaseDocumentsPage() {
           </select>
           <select
             className="form-field__input"
+            aria-label="Sort documents"
             value={`${query.sort_by}:${query.sort_order}`}
             onChange={(event) => {
               const [sort_by, sort_order] = event.target.value.split(":");
@@ -301,7 +305,7 @@ export function KnowledgeBaseDocumentsPage() {
         </div>
       ) : (
         <div className="panel">
-          <div className="table-wrapper">
+          <div className="table-wrapper documents-table-desktop">
             <table className="data-table">
               <thead>
                 <tr>
@@ -326,6 +330,43 @@ export function KnowledgeBaseDocumentsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="documents-card-list">
+            {items.map((item) => (
+              <article key={item.id} className="document-card">
+                <div className="document-card__header">
+                  <div className="table-primary">{item.title}</div>
+                  <div className="document-card__badges">
+                    <DocumentStatusBadge status={item.ingestion_status} />
+                    <Badge tone="neutral">{item.source_type}</Badge>
+                  </div>
+                </div>
+                <div className="document-card__meta">
+                  <div>Filename: {item.original_filename ?? "-"}</div>
+                  <div>
+                    Version: v{item.version}{" "}
+                    {item.is_latest ? <Badge tone="success">Latest</Badge> : null}
+                  </div>
+                  <div>Status: {item.status}</div>
+                </div>
+                <div className="row-actions">
+                  <Link
+                    className="secondary-button secondary-button--link"
+                    to={`/knowledge-bases/${knowledgeBaseId}/documents/${item.id}`}
+                  >
+                    Detail
+                  </Link>
+                  <button
+                    className="secondary-button"
+                    disabled={item.ingestion_status !== "failed" || retryingId === item.id}
+                    onClick={() => void handleRetry(item.id)}
+                  >
+                    {retryingId === item.id ? "Retrying..." : "Retry"}
+                  </button>
+                </div>
+              </article>
+            ))}
           </div>
 
           <div className="pagination-bar">
@@ -405,9 +446,6 @@ function DocumentRow({
           >
             Detail
           </Link>
-          <button className="secondary-button" disabled>
-            Versions
-          </button>
           <button
             className="secondary-button"
             disabled={item.ingestion_status !== "failed" || retrying}

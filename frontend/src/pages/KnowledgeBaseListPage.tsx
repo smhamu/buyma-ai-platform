@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { Badge } from "../components/ui/Badge";
 import { ApiClientError } from "../lib/api";
 import { fetchKnowledgeBases } from "../modules/knowledge-bases/api";
 import type { KnowledgeBase } from "../modules/knowledge-bases/types";
-import { Badge } from "../components/ui/Badge";
 
 export function KnowledgeBaseListPage() {
   const [items, setItems] = useState<KnowledgeBase[]>([]);
@@ -27,7 +27,7 @@ export function KnowledgeBaseListPage() {
           setError(
             err instanceof ApiClientError
               ? err.message
-              : "Knowledge Base一覧の取得に失敗しました。",
+              : "Failed to load Knowledge Bases.",
           );
         }
       } finally {
@@ -45,13 +45,13 @@ export function KnowledgeBaseListPage() {
   }, []);
 
   if (isLoading) {
-    return <div className="page-status">Knowledge Base一覧を読み込み中...</div>;
+    return <div className="page-status">Loading Knowledge Bases...</div>;
   }
 
   if (error) {
     return (
       <div className="panel panel--error">
-        <h2>読み込みに失敗しました</h2>
+        <h2>Failed to load Knowledge Bases</h2>
         <p>{error}</p>
       </div>
     );
@@ -60,9 +60,10 @@ export function KnowledgeBaseListPage() {
   if (items.length === 0) {
     return (
       <div className="panel panel--empty">
-        <h2>Knowledge Base がまだありません</h2>
+        <h2>No Knowledge Bases yet</h2>
         <p>
-          作成済みのKnowledge Baseが0件です。backend側で作成後、この一覧に表示されます。
+          No Knowledge Bases are available for this account. Once they are created
+          on the backend, they will appear here.
         </p>
       </div>
     );
@@ -73,7 +74,7 @@ export function KnowledgeBaseListPage() {
       <div className="page-section__header">
         <div>
           <h1>Knowledge Bases</h1>
-          <p>利用可能なKnowledge Baseを確認できます。</p>
+          <p>Review the Knowledge Bases available to your account.</p>
         </div>
       </div>
 
@@ -81,16 +82,16 @@ export function KnowledgeBaseListPage() {
         {items.map((item) => (
           <article key={item.id} className="kb-card">
             <div className="kb-card__header">
-              <h2>{item.name}</h2>
+              <h2 className="kb-card__title">{item.name}</h2>
               <Badge tone={item.is_active ? "success" : "muted"}>
                 {item.is_active ? "Active" : "Inactive"}
               </Badge>
             </div>
             <p className="kb-card__description">
-              {item.description || "説明は未設定です。"}
+              {item.description || "No description provided."}
             </p>
             <Link className="text-link" to={`/knowledge-bases/${item.id}`}>
-              詳細を見る
+              View details
             </Link>
           </article>
         ))}
