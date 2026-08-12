@@ -16,6 +16,7 @@ from app.models.embedding_model import EmbeddingModel
 from app.models.embedding_job import EmbeddingJob
 from app.models.embedding import Embedding
 from app.models.knowledge_base import KnowledgeBase
+from app.core.config import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -31,6 +32,13 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
+
+# Alembic uses a synchronous driver. Keep credentials and the target database
+# sourced from the same environment-backed settings as the application.
+config.set_main_option(
+    "sqlalchemy.url",
+    settings.database_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1),
+)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
