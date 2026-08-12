@@ -84,6 +84,10 @@ async def test_list_knowledge_base_documents_returns_documents():
         content="content",
         source_type="manual",
         source_url=None,
+        original_filename=None,
+        mime_type=None,
+        file_size=None,
+        checksum=None,
         status="active",
         ingestion_status="ready",
     )

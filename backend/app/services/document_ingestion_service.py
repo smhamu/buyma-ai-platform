@@ -54,6 +54,10 @@ class DocumentIngestionService:
                 "content": payload.content,
                 "source_type": payload.source_type,
                 "source_url": payload.source_url,
+                "original_filename": payload.original_filename,
+                "mime_type": payload.mime_type,
+                "file_size": payload.file_size,
+                "checksum": payload.checksum,
                 "status": payload.status,
                 "ingestion_status": "pending",
             }

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -26,6 +26,14 @@ class Document(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     source_type: Mapped[str] = mapped_column(String(50), nullable=False, default="manual")
     source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    original_filename: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    mime_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    file_size: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    checksum: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+    )
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="active")
     ingestion_status: Mapped[str] = mapped_column(
         String(50),

@@ -30,5 +30,9 @@ class DocumentResponse(BaseModel):
     content: str
     source_type: str
     source_url: str | None
+    original_filename: str | None
+    mime_type: str | None
+    file_size: int | None
+    checksum: str | None
     status: str
     ingestion_status: str

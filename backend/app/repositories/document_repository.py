@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -19,3 +21,18 @@ class DocumentRepository(BaseRepository[Document]):
             .order_by(Document.created_at.desc())
         )
         return list(result.scalars().all())
+
+    async def find_by_checksum(
+        self,
+        checksum: str,
+        knowledge_base_id: UUID | None = None,
+    ) -> Document | None:
+        query = select(Document).where(Document.checksum == checksum)
+
+        if knowledge_base_id is None:
+            query = query.where(Document.knowledge_base_id.is_(None))
+        else:
+            query = query.where(Document.knowledge_base_id == knowledge_base_id)
+
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()

@@ -3,10 +3,12 @@ from uuid import UUID
 
 from fastapi import status
 
-from app.common.exceptions import AppException
+from app.common.exceptions import AppException, DuplicateDocumentFileException
 from app.document_extractors.factory import DocumentTextExtractorFactory
+from app.repositories.document_repository import DocumentRepository
 from app.schemas.document_ingestion import DocumentIngestionRequest
 from app.services.document_ingestion_service import DocumentIngestionService
+from app.utils.checksum import calculate_sha256
 
 
 class DocumentFileIngestionService:
@@ -16,14 +18,17 @@ class DocumentFileIngestionService:
     def __init__(
         self,
         ingestion_service: DocumentIngestionService,
+        document_repository: DocumentRepository,
     ):
         self.ingestion_service = ingestion_service
+        self.document_repository = document_repository
 
     async def ingest_file(
         self,
         filename: str,
         file_content: bytes,
         embedding_model_id: UUID,
+        mime_type: str | None = None,
         knowledge_base_id: UUID | None = None,
         chunk_size: int = 500,
     ):
@@ -42,6 +47,14 @@ class DocumentFileIngestionService:
                 code="UNSUPPORTED_DOCUMENT_FILE",
                 message="Only PDF, TXT and Markdown files are supported.",
             )
+
+        checksum = calculate_sha256(file_content)
+        existing = await self.document_repository.find_by_checksum(
+            checksum=checksum,
+            knowledge_base_id=knowledge_base_id,
+        )
+        if existing is not None:
+            raise DuplicateDocumentFileException()
 
         try:
             extractor = DocumentTextExtractorFactory.create(extension)
@@ -74,6 +87,10 @@ class DocumentFileIngestionService:
                 content=content,
                 source_type="file",
                 source_url=None,
+                original_filename=filename,
+                mime_type=mime_type,
+                file_size=file_size,
+                checksum=checksum,
                 status="active",
                 embedding_model_id=embedding_model_id,
                 chunk_size=chunk_size,

@@ -28,6 +28,15 @@ class NotFoundException(AppException):
         )
 
 
+class DuplicateDocumentFileException(AppException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT,
+            code="DUPLICATE_DOCUMENT_FILE",
+            message="The same document file has already been registered.",
+        )
+
+
 class AIProviderException(AppException):
     pass
 

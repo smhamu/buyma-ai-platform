@@ -31,6 +31,10 @@ class FakeIngestionService:
                 content=payload.content,
                 source_type=payload.source_type,
                 source_url=payload.source_url,
+                original_filename=payload.original_filename,
+                mime_type=payload.mime_type,
+                file_size=payload.file_size,
+                checksum=payload.checksum,
                 status=payload.status,
                 ingestion_status="pending",
             ),
@@ -61,9 +65,10 @@ def make_job():
 
 
 class FakeUploadFile:
-    def __init__(self, filename, content):
+    def __init__(self, filename, content, content_type="text/plain"):
         self.filename = filename
         self.content = content
+        self.content_type = content_type
 
     async def read(self):
         return self.content
@@ -78,6 +83,7 @@ class FakeFileIngestionService:
         filename,
         file_content,
         embedding_model_id,
+        mime_type=None,
         knowledge_base_id=None,
         chunk_size=500,
     ):
@@ -101,6 +107,10 @@ class FakeFileIngestionService:
                 content=file_content.decode("utf-8"),
                 source_type="file",
                 source_url=None,
+                original_filename=filename,
+                mime_type=mime_type,
+                file_size=len(file_content),
+                checksum="a" * 64,
                 status="active",
                 ingestion_status="pending",
             ),

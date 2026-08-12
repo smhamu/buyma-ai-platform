@@ -13,6 +13,10 @@ class DocumentIngestionRequest(BaseModel):
     content: str
     source_type: str = "manual"
     source_url: str | None = None
+    original_filename: str | None = None
+    mime_type: str | None = None
+    file_size: int | None = None
+    checksum: str | None = None
     status: str = "active"
     embedding_model_id: UUID
     chunk_size: int = Field(default=500, ge=100, le=5000)

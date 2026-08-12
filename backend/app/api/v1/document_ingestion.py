@@ -61,11 +61,20 @@ def get_document_ingestion_retry_service(
 
 
 def get_document_file_ingestion_service(
-    ingestion_service: DocumentIngestionService = Depends(
-        get_document_ingestion_service
-    ),
+    db: AsyncSession = Depends(get_db),
 ) -> DocumentFileIngestionService:
-    return DocumentFileIngestionService(ingestion_service)
+    document_repository = DocumentRepository(db)
+    ingestion_service = DocumentIngestionService(
+        document_repository=document_repository,
+        chunk_repository=DocumentChunkRepository(db),
+        embedding_job_repository=EmbeddingJobRepository(db),
+        embedding_model_repository=EmbeddingModelRepository(db),
+        knowledge_base_repository=KnowledgeBaseRepository(db),
+    )
+    return DocumentFileIngestionService(
+        ingestion_service=ingestion_service,
+        document_repository=document_repository,
+    )
 
 
 @router.post("/ingest")
@@ -119,6 +128,7 @@ async def ingest_document_file(
         filename=file.filename or "document",
         file_content=file_content,
         embedding_model_id=embedding_model_id,
+        mime_type=file.content_type,
         knowledge_base_id=knowledge_base_id,
         chunk_size=chunk_size,
     )
