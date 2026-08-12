@@ -7,7 +7,7 @@ class VectorSearchRequest(BaseModel):
     query: str
     embedding_model_id: UUID
     top_k: int = Field(default=5, ge=1, le=50)
-    distance_threshold: float | None = Field(default=0.4, ge=0.0, le=2.0)
+    distance_threshold: float | None = Field(default=0.5, ge=0.0, le=2.0)
 
 
 class VectorSearchResult(BaseModel):
