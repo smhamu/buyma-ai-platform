@@ -8,6 +8,7 @@ from app.api.v1.knowledge_bases import (
     create_knowledge_base,
     delete_knowledge_base,
     get_knowledge_base,
+    get_knowledge_base_stats,
     list_knowledge_base_documents,
 )
 from app.schemas.knowledge_base import KnowledgeBaseCreate
@@ -72,6 +73,48 @@ async def test_delete_knowledge_base_returns_deleted_id():
     )
 
     assert response["data"] == {"id": str(knowledge_base_id)}
+
+
+@pytest.mark.asyncio
+async def test_get_knowledge_base_stats_returns_counts():
+    knowledge_base_id = uuid4()
+    stats = SimpleNamespace(
+        document_count=5,
+        latest_document_count=4,
+        ready_count=3,
+        pending_count=0,
+        processing_count=0,
+        failed_count=1,
+        chunk_count=12,
+        embedding_count=11,
+        model_dump=lambda: {
+            "document_count": 5,
+            "latest_document_count": 4,
+            "ready_count": 3,
+            "pending_count": 0,
+            "processing_count": 0,
+            "failed_count": 1,
+            "chunk_count": 12,
+            "embedding_count": 11,
+        },
+    )
+    service = SimpleNamespace(get_stats=AsyncMock(return_value=stats))
+
+    response = await get_knowledge_base_stats(
+        knowledge_base_id=knowledge_base_id,
+        service=service,
+        current_user=SimpleNamespace(),
+    )
+
+    service.get_stats.assert_awaited_once_with(knowledge_base_id)
+    assert response["success"] is True
+    assert response["message"] == "Knowledge base stats fetched successfully."
+    assert response["data"]["document_count"] == 5
+    assert response["data"]["latest_document_count"] == 4
+    assert response["data"]["ready_count"] == 3
+    assert response["data"]["failed_count"] == 1
+    assert response["data"]["chunk_count"] == 12
+    assert response["data"]["embedding_count"] == 11
 
 
 @pytest.mark.asyncio

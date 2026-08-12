@@ -10,6 +10,9 @@ from app.core.database import get_db
 from app.models.user import User
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
+from app.repositories.knowledge_base_stats_repository import (
+    KnowledgeBaseStatsRepository,
+)
 from app.schemas.document import DocumentResponse
 from app.schemas.knowledge_base import (
     KnowledgeBaseCreate,
@@ -19,6 +22,7 @@ from app.schemas.knowledge_base import (
 from app.schemas.knowledge_base_document import KnowledgeBaseDocumentListResponse
 from app.services.knowledge_base_document_service import KnowledgeBaseDocumentService
 from app.services.knowledge_base_service import KnowledgeBaseService
+from app.services.knowledge_base_stats_service import KnowledgeBaseStatsService
 
 router = APIRouter(prefix="/knowledge-bases", tags=["Knowledge Bases"])
 
@@ -35,6 +39,15 @@ def get_knowledge_base_document_service(
     return KnowledgeBaseDocumentService(
         knowledge_base_repository=KnowledgeBaseRepository(db),
         document_repository=DocumentRepository(db),
+    )
+
+
+def get_knowledge_base_stats_service(
+    db: AsyncSession = Depends(get_db),
+) -> KnowledgeBaseStatsService:
+    return KnowledgeBaseStatsService(
+        knowledge_base_repository=KnowledgeBaseRepository(db),
+        stats_repository=KnowledgeBaseStatsRepository(db),
     )
 
 
@@ -108,6 +121,20 @@ async def delete_knowledge_base(
     return success_response(
         data=result,
         message="Knowledge base deleted successfully.",
+    )
+
+
+@router.get("/{knowledge_base_id}/stats")
+async def get_knowledge_base_stats(
+    knowledge_base_id: UUID,
+    service: KnowledgeBaseStatsService = Depends(get_knowledge_base_stats_service),
+    current_user: User = Depends(get_current_user),
+):
+    stats = await service.get_stats(knowledge_base_id)
+
+    return success_response(
+        data=stats.model_dump(),
+        message="Knowledge base stats fetched successfully.",
     )
 
 
