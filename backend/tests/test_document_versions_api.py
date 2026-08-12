@@ -4,6 +4,7 @@ from uuid import uuid4
 import pytest
 
 from app.api.v1.document_versions import (
+    compare_document_versions,
     list_document_versions,
     restore_document_version,
 )
@@ -52,6 +53,16 @@ class FakeRollbackService:
 
     async def restore(self, document_id):
         self.restored_ids.append(document_id)
+        return self.result
+
+
+class FakeDiffService:
+    def __init__(self, result):
+        self.result = result
+        self.compare_calls = []
+
+    async def compare(self, base_document_id, compare_document_id):
+        self.compare_calls.append((base_document_id, compare_document_id))
         return self.result
 
 
@@ -132,3 +143,42 @@ async def test_restore_document_version_returns_new_document():
     assert response["data"]["new_document"]["version"] == 3
     assert response["data"]["new_document"]["is_latest"] is True
     assert response["data"]["task_ids"] == ["task-id"]
+
+
+@pytest.mark.asyncio
+async def test_compare_document_versions_returns_diff():
+    base = make_document(version=1)
+    compare = make_document(version=2, version_group_id=base.version_group_id)
+    service = FakeDiffService(
+        {
+            "base_document_id": base.id,
+            "base_version": base.version,
+            "compare_document_id": compare.id,
+            "compare_version": compare.version,
+            "lines": [
+                {"type": "unchanged", "content": "keep"},
+                {"type": "removed", "content": "old"},
+                {"type": "added", "content": "new"},
+            ],
+            "added_count": 1,
+            "removed_count": 1,
+            "unchanged_count": 1,
+            "has_changes": True,
+        }
+    )
+
+    response = await compare_document_versions(
+        document_id=base.id,
+        compare_document_id=compare.id,
+        service=service,
+        current_user=SimpleNamespace(),
+    )
+
+    assert service.compare_calls == [(base.id, compare.id)]
+    assert response["success"] is True
+    assert response["message"] == "Document version diff fetched successfully."
+    assert response["data"]["base_document_id"] == base.id
+    assert response["data"]["compare_document_id"] == compare.id
+    assert response["data"]["added_count"] == 1
+    assert response["data"]["removed_count"] == 1
+    assert response["data"]["has_changes"] is True

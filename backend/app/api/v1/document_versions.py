@@ -14,8 +14,10 @@ from app.repositories.embedding_job_repository import EmbeddingJobRepository
 from app.repositories.embedding_model_repository import EmbeddingModelRepository
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.schemas.document import DocumentResponse
+from app.schemas.document_version_diff import DocumentVersionDiffResponse
 from app.schemas.document_version_rollback import DocumentVersionRollbackResponse
 from app.services.document_ingestion_service import DocumentIngestionService
+from app.services.document_version_diff_service import DocumentVersionDiffService
 from app.services.document_version_rollback_service import (
     DocumentVersionRollbackService,
 )
@@ -44,6 +46,14 @@ def get_document_version_rollback_service(
     )
 
 
+def get_document_version_diff_service(
+    db: AsyncSession = Depends(get_db),
+) -> DocumentVersionDiffService:
+    return DocumentVersionDiffService(
+        document_repository=DocumentRepository(db),
+    )
+
+
 @router.get("/{document_id}/versions")
 async def list_document_versions(
     document_id: UUID,
@@ -64,6 +74,25 @@ async def list_document_versions(
             for version in versions
         ],
         message="Document versions fetched successfully.",
+    )
+
+
+@router.get("/{document_id}/versions/{compare_document_id}/diff")
+async def compare_document_versions(
+    document_id: UUID,
+    compare_document_id: UUID,
+    service: DocumentVersionDiffService = Depends(get_document_version_diff_service),
+    current_user: User = Depends(get_current_user),
+):
+    result = await service.compare(
+        base_document_id=document_id,
+        compare_document_id=compare_document_id,
+    )
+    response = DocumentVersionDiffResponse.model_validate(result)
+
+    return success_response(
+        data=response.model_dump(),
+        message="Document version diff fetched successfully.",
     )
 
 
