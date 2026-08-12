@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.embedding_job import EmbeddingJob
@@ -52,3 +52,21 @@ class EmbeddingJobRepository(BaseRepository[EmbeddingJob]):
             .limit(1)
         )
         return result.scalar_one_or_none()
+
+    async def mark_processing_if_pending(
+        self,
+        job_id: UUID,
+    ) -> bool:
+        result = await self.db.execute(
+            update(EmbeddingJob)
+            .where(
+                EmbeddingJob.id == job_id,
+                EmbeddingJob.status == "pending",
+            )
+            .values(
+                status="processing",
+                error_message=None,
+            )
+        )
+        await self.db.flush()
+        return result.rowcount == 1

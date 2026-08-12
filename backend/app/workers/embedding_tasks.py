@@ -1,9 +1,15 @@
 import asyncio
 from uuid import UUID
 
+from celery.exceptions import MaxRetriesExceededError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from app.common.exceptions import (
+    AIProviderRateLimitException,
+    AIProviderTimeoutException,
+    AIProviderUnavailableException,
+)
 from app.core.config import settings
 from app.models.document import Document  # noqa: F401
 from app.models.document_chunk import DocumentChunk  # noqa: F401
@@ -23,8 +29,18 @@ from app.services.document_ingestion_status_service import (
 from app.services.embedding_service import EmbeddingService
 from app.workers.celery_app import celery_app
 
+RETRYABLE_EXCEPTIONS = (
+    AIProviderRateLimitException,
+    AIProviderTimeoutException,
+    AIProviderUnavailableException,
+)
 
-async def _run_embedding_job(job_id: str):
+
+def is_retryable_exception(exc: Exception) -> bool:
+    return isinstance(exc, RETRYABLE_EXCEPTIONS)
+
+
+async def _create_worker_session():
     engine = create_async_engine(
         settings.database_url,
         echo=True,
@@ -34,9 +50,14 @@ async def _run_embedding_job(job_id: str):
         bind=engine,
         expire_on_commit=False,
     )
+    return session_factory(), engine
+
+
+async def _run_embedding_job(job_id: str):
+    db, engine = await _create_worker_session()
 
     try:
-        async with session_factory() as db:
+        async with db:
             job_repository = EmbeddingJobRepository(db)
             job = await job_repository.find_by_id(UUID(job_id))
 
@@ -60,7 +81,109 @@ async def _run_embedding_job(job_id: str):
         await engine.dispose()
 
 
-@celery_app.task(name="embedding.run_job")
-def run_embedding_job_task(job_id: str):
-    asyncio.run(_run_embedding_job(job_id))
+async def _mark_job_for_retry(
+    job_id: str,
+    retry_count: int,
+    error_message: str,
+):
+    db, engine = await _create_worker_session()
+
+    try:
+        async with db:
+            repository = EmbeddingJobRepository(db)
+            job = await repository.find_by_id(UUID(job_id))
+
+            if job is None:
+                return
+
+            job.status = "pending"
+            job.retry_count = retry_count
+            job.error_message = error_message[:1000]
+            await db.commit()
+    finally:
+        await engine.dispose()
+
+
+async def _mark_job_failed(
+    job_id: str,
+    error_message: str,
+):
+    db, engine = await _create_worker_session()
+
+    try:
+        async with db:
+            repository = EmbeddingJobRepository(db)
+            job = await repository.find_by_id(UUID(job_id))
+
+            if job is None:
+                return
+
+            job.status = "failed"
+            job.error_message = error_message[:1000]
+            document_id = job.document_id
+            await db.commit()
+
+            status_service = DocumentIngestionStatusService(
+                document_repository=DocumentRepository(db),
+            )
+            await status_service.refresh_status(document_id)
+    finally:
+        await engine.dispose()
+
+
+def _run_embedding_job_task(self, job_id: str):
+    try:
+        asyncio.run(_run_embedding_job(job_id))
+    except Exception as exc:
+        if is_retryable_exception(exc):
+            retry_number = self.request.retries + 1
+
+            if retry_number > self.max_retries:
+                asyncio.run(
+                    _mark_job_failed(
+                        job_id=job_id,
+                        error_message=f"Retry limit exceeded: {exc}",
+                    )
+                )
+                raise
+
+            asyncio.run(
+                _mark_job_for_retry(
+                    job_id=job_id,
+                    retry_count=retry_number,
+                    error_message=str(exc),
+                )
+            )
+            countdown = min(2**retry_number * 5, 60)
+
+            try:
+                raise self.retry(exc=exc, countdown=countdown)
+            except MaxRetriesExceededError:
+                asyncio.run(
+                    _mark_job_failed(
+                        job_id=job_id,
+                        error_message=f"Retry limit exceeded: {exc}",
+                    )
+                )
+                raise
+
+        asyncio.run(
+            _mark_job_failed(
+                job_id=job_id,
+                error_message=str(exc),
+            )
+        )
+        raise
+
     return {"job_id": job_id, "status": "completed"}
+
+
+@celery_app.task(
+    bind=True,
+    name="embedding.run_job",
+    max_retries=3,
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def run_embedding_job_task(self, job_id: str):
+    return _run_embedding_job_task(self, job_id)
