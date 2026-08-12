@@ -4,6 +4,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { ProtectedRoute } from "./components/routing/ProtectedRoute";
 import { PublicOnlyRoute } from "./components/routing/PublicOnlyRoute";
 import { KnowledgeBaseDetailPage } from "./pages/KnowledgeBaseDetailPage";
+import { KnowledgeBaseDocumentsPage } from "./pages/KnowledgeBaseDocumentsPage";
 import { KnowledgeBaseListPage } from "./pages/KnowledgeBaseListPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
@@ -33,6 +34,10 @@ export function App() {
         <Route
           path="knowledge-bases/:knowledgeBaseId"
           element={<KnowledgeBaseDetailPage />}
+        />
+        <Route
+          path="knowledge-bases/:knowledgeBaseId/documents"
+          element={<KnowledgeBaseDocumentsPage />}
         />
       </Route>
 

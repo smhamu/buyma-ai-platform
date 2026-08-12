@@ -23,7 +23,7 @@ export function AppLayout() {
             Knowledge Bases
           </NavLink>
           <button className="sidebar__link sidebar__link--disabled" disabled>
-            Documents（準備中）
+            Documents
           </button>
           <button className="sidebar__link sidebar__link--disabled" disabled>
             RAG（準備中）

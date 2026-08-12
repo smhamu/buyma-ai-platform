@@ -109,4 +109,9 @@ export const apiClient = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  postForm: <T>(path: string, body: FormData) =>
+    request<T>(path, {
+      method: "POST",
+      body,
+    }),
 };

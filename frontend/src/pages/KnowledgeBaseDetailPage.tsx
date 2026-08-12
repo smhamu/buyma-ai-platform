@@ -130,10 +130,13 @@ export function KnowledgeBaseDetailPage() {
 
       <div className="panel">
         <h2>Documents</h2>
-        <p>Document一覧画面は次フェーズで実装予定です。</p>
-        <button className="secondary-button" disabled>
-          /knowledge-bases/{knowledgeBase.id}/documents（準備中）
-        </button>
+        <p>Knowledge Base 配下の Document 一覧と Upload 管理へ進めます。</p>
+        <Link
+          className="secondary-button secondary-button--link"
+          to={`/knowledge-bases/${knowledgeBase.id}/documents`}
+        >
+          Open Documents
+        </Link>
       </div>
     </section>
   );

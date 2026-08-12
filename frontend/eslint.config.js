@@ -27,6 +27,8 @@ export default [
         RequestInit: "readonly",
         Headers: "readonly",
         HTMLFormElement: "readonly",
+        File: "readonly",
+        URLSearchParams: "readonly",
         describe: "readonly",
         it: "readonly",
         expect: "readonly",
