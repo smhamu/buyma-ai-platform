@@ -11,6 +11,7 @@ Do not expose the service to the Internet until every P0 item is complete.
 - [ ] Confirm PostgreSQL, Redis, and FastAPI have no host-published ports.
 - [ ] Configure TLS termination, HTTP-to-HTTPS redirect, and the production domain.
 - [ ] Add HSTS only after HTTPS works on the production domain and all subdomains in scope.
+- [ ] Run `scripts/production/Test-ProductionEnv.ps1` without errors.
 
 ## Database and identity
 
@@ -26,6 +27,7 @@ Do not expose the service to the Internet until every P0 item is complete.
 - [ ] Run `docker compose -f docker-compose.prod.yml exec -T postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc > buyma-ai.dump`.
 - [ ] Restore into a disposable database and verify it: `pg_restore --clean --if-exists --no-owner --dbname=<restore-db> buyma-ai.dump`.
 - [ ] Record backup retention, owner, schedule, recovery point objective, and recovery time objective.
+- [ ] Run `Backup-Postgres.ps1` and `Test-Restore.ps1` against the production-like environment.
 
 ## Runtime health and cost controls
 
@@ -43,6 +45,7 @@ Do not expose the service to the Internet until every P0 item is complete.
 - [ ] Login, Knowledge Base list/detail, upload, versioning, diff, restore, and logout smoke tests pass over HTTPS.
 - [ ] IDOR direct-access test returns Not Found.
 - [ ] A rollback image and database restore procedure are documented and available.
+- [ ] Run `Invoke-SmokeTest.ps1` against the HTTPS production domain.
 
 ## Token storage risk acceptance
 

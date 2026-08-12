@@ -168,4 +168,6 @@ docker run --rm --add-host=host.docker.internal:host-gateway `
 Production deployment uses `docker-compose.prod.yml`, not the development Compose
 file. It publishes only the frontend port; Backend, PostgreSQL, and Redis remain on
 internal Docker networks. Complete [the release checklist](../docs/MVP_RELEASE_CHECKLIST.md)
-before exposing the application to the Internet.
+before exposing the application to the Internet. See the
+[production operations guide](../docs/PRODUCTION_OPERATIONS.md) for environment
+validation, database initialization, backup/restore, and smoke-test commands.

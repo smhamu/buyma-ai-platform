@@ -46,3 +46,7 @@ frontend/coverage/
 # Celery runtime state
 celerybeat-schedule
 backend/celerybeat-schedule
+
+# Production operations
+backups/
+*.dump
