@@ -34,5 +34,9 @@ class DocumentResponse(BaseModel):
     mime_type: str | None
     file_size: int | None
     checksum: str | None
+    version: int
+    previous_document_id: UUID | None
+    version_group_id: UUID
+    is_latest: bool
     status: str
     ingestion_status: str

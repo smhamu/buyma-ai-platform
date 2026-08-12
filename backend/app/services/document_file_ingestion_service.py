@@ -1,5 +1,5 @@
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import status
 
@@ -49,12 +49,24 @@ class DocumentFileIngestionService:
             )
 
         checksum = calculate_sha256(file_content)
-        existing = await self.document_repository.find_by_checksum(
-            checksum=checksum,
+        latest_document = await self.document_repository.find_latest_by_filename(
             knowledge_base_id=knowledge_base_id,
+            original_filename=filename,
         )
-        if existing is not None:
-            raise DuplicateDocumentFileException()
+        if latest_document is None:
+            version = 1
+            previous_document_id = None
+            version_group_id = uuid4()
+        else:
+            if latest_document.checksum == checksum:
+                raise DuplicateDocumentFileException()
+
+            latest_document.is_latest = False
+            await self.document_repository.db.commit()
+
+            version = latest_document.version + 1
+            previous_document_id = latest_document.id
+            version_group_id = latest_document.version_group_id
 
         try:
             extractor = DocumentTextExtractorFactory.create(extension)
@@ -91,6 +103,10 @@ class DocumentFileIngestionService:
                 mime_type=mime_type,
                 file_size=file_size,
                 checksum=checksum,
+                version=version,
+                previous_document_id=previous_document_id,
+                version_group_id=version_group_id,
+                is_latest=True,
                 status="active",
                 embedding_model_id=embedding_model_id,
                 chunk_size=chunk_size,

@@ -36,3 +36,37 @@ class DocumentRepository(BaseRepository[Document]):
 
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
+
+    async def find_latest_by_filename(
+        self,
+        *,
+        knowledge_base_id: UUID | None,
+        original_filename: str,
+    ) -> Document | None:
+        query = (
+            select(Document)
+            .where(
+                Document.original_filename == original_filename,
+                Document.is_latest.is_(True),
+            )
+            .order_by(Document.version.desc())
+        )
+
+        if knowledge_base_id is None:
+            query = query.where(Document.knowledge_base_id.is_(None))
+        else:
+            query = query.where(Document.knowledge_base_id == knowledge_base_id)
+
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def find_versions_by_group(
+        self,
+        version_group_id: UUID,
+    ) -> list[Document]:
+        result = await self.db.execute(
+            select(Document)
+            .where(Document.version_group_id == version_group_id)
+            .order_by(Document.version.asc())
+        )
+        return list(result.scalars().all())

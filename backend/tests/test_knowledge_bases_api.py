@@ -88,6 +88,10 @@ async def test_list_knowledge_base_documents_returns_documents():
         mime_type=None,
         file_size=None,
         checksum=None,
+        version=1,
+        previous_document_id=None,
+        version_group_id=uuid4(),
+        is_latest=True,
         status="active",
         ingestion_status="ready",
     )

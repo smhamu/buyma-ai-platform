@@ -46,6 +46,7 @@ class EmbeddingRepository(BaseRepository[Embedding]):
                 Embedding.status == "active",
                 Document.ingestion_status == "ready",
                 Document.status == "active",
+                Document.is_latest.is_(True),
             )
         )
 

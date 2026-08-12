@@ -17,6 +17,10 @@ class DocumentIngestionRequest(BaseModel):
     mime_type: str | None = None
     file_size: int | None = None
     checksum: str | None = None
+    version: int = 1
+    previous_document_id: UUID | None = None
+    version_group_id: UUID | None = None
+    is_latest: bool = True
     status: str = "active"
     embedding_model_id: UUID
     chunk_size: int = Field(default=500, ge=100, le=5000)

@@ -18,6 +18,7 @@ from app.api.v1.retriever import router as retriever_router
 from app.api.v1.prompt_builder import router as prompt_builder_router
 from app.api.v1.rag import router as rag_router
 from app.api.v1.knowledge_bases import router as knowledge_bases_router
+from app.api.v1.document_versions import router as document_versions_router
 
 
 setup_logging()
@@ -64,6 +65,7 @@ app.include_router(auth_router)
 app.include_router(products_router)
 app.include_router(knowledge_bases_router)
 app.include_router(document_ingestion_router)
+app.include_router(document_versions_router)
 app.include_router(documents_router)
 app.include_router(document_chunks_router)
 app.include_router(embedding_providers_router)

@@ -1,6 +1,15 @@
 import uuid
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -32,6 +41,25 @@ class Document(Base):
     checksum: Mapped[str | None] = mapped_column(
         String(64),
         nullable=True,
+        index=True,
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    previous_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    version_group_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        nullable=False,
+        default=uuid.uuid4,
+        index=True,
+    )
+    is_latest: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
         index=True,
     )
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="active")

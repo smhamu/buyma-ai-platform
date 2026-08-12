@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from fastapi import status
 
 from app.common.exceptions import AppException, NotFoundException
@@ -58,6 +60,10 @@ class DocumentIngestionService:
                 "mime_type": payload.mime_type,
                 "file_size": payload.file_size,
                 "checksum": payload.checksum,
+                "version": payload.version,
+                "previous_document_id": payload.previous_document_id,
+                "version_group_id": payload.version_group_id or uuid4(),
+                "is_latest": payload.is_latest,
                 "status": payload.status,
                 "ingestion_status": "pending",
             }

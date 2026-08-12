@@ -10,6 +10,14 @@ from app.services.document_file_ingestion_service import (
 )
 
 
+class FakeDb:
+    def __init__(self):
+        self.commit_count = 0
+
+    async def commit(self):
+        self.commit_count += 1
+
+
 class FakeIngestionService:
     def __init__(self):
         self.ingest = AsyncMock(
@@ -22,41 +30,45 @@ class FakeIngestionService:
 
 
 class FakeDocumentRepository:
-    def __init__(self, existing_document=None):
-        self.existing_document = existing_document
-        self.find_by_checksum_calls = []
+    def __init__(self, latest_document=None):
+        self.latest_document = latest_document
+        self.find_latest_by_filename_calls = []
+        self.db = FakeDb()
 
-    async def find_by_checksum(self, checksum, knowledge_base_id=None):
-        self.find_by_checksum_calls.append(
+    async def find_latest_by_filename(
+        self,
+        *,
+        knowledge_base_id,
+        original_filename,
+    ):
+        self.find_latest_by_filename_calls.append(
             {
-                "checksum": checksum,
                 "knowledge_base_id": knowledge_base_id,
+                "original_filename": original_filename,
             }
         )
-        return self.existing_document
+        return self.latest_document
 
 
-def make_service(ingestion_service=None, existing_document=None):
-    return DocumentFileIngestionService(
+def make_service(ingestion_service=None, latest_document=None):
+    repository = FakeDocumentRepository(latest_document)
+    service = DocumentFileIngestionService(
         ingestion_service=ingestion_service or FakeIngestionService(),
-        document_repository=FakeDocumentRepository(existing_document),
+        document_repository=repository,
     )
+    return service, repository
 
 
 @pytest.mark.asyncio
-async def test_ingest_txt_extracts_content_and_calls_ingestion_service():
+async def test_first_upload_sets_version_1_and_metadata():
     ingestion_service = FakeIngestionService()
-    document_repository = FakeDocumentRepository()
-    service = DocumentFileIngestionService(
-        ingestion_service=ingestion_service,
-        document_repository=document_repository,
-    )
+    service, repository = make_service(ingestion_service=ingestion_service)
     embedding_model_id = uuid4()
     knowledge_base_id = uuid4()
-    content_bytes = "BUYMA価格設定".encode("utf-8")
+    content_bytes = "BUYMA price rule".encode("utf-8")
 
     result = await service.ingest_file(
-        filename="buyma_price.txt",
+        filename="rule.txt",
         file_content=content_bytes,
         embedding_model_id=embedding_model_id,
         mime_type="text/plain",
@@ -65,29 +77,108 @@ async def test_ingest_txt_extracts_content_and_calls_ingestion_service():
     )
 
     payload = ingestion_service.ingest.await_args.args[0]
-    assert payload.title == "buyma_price"
-    assert payload.content == "BUYMA価格設定"
+    assert payload.title == "rule"
+    assert payload.content == "BUYMA price rule"
     assert payload.source_type == "file"
-    assert payload.original_filename == "buyma_price.txt"
+    assert payload.original_filename == "rule.txt"
     assert payload.mime_type == "text/plain"
     assert payload.file_size == len(content_bytes)
     assert len(payload.checksum) == 64
+    assert payload.version == 1
+    assert payload.previous_document_id is None
+    assert payload.version_group_id is not None
+    assert payload.is_latest is True
     assert payload.embedding_model_id == embedding_model_id
     assert payload.knowledge_base_id == knowledge_base_id
-    assert document_repository.find_by_checksum_calls == [
+    assert repository.find_latest_by_filename_calls == [
         {
-            "checksum": payload.checksum,
             "knowledge_base_id": knowledge_base_id,
+            "original_filename": "rule.txt",
         }
     ]
-    assert result["filename"] == "buyma_price.txt"
+    assert result["filename"] == "rule.txt"
     assert result["file_size"] == len(content_bytes)
+
+
+@pytest.mark.asyncio
+async def test_same_filename_changed_content_creates_next_version():
+    previous_id = uuid4()
+    version_group_id = uuid4()
+    latest_document = SimpleNamespace(
+        id=previous_id,
+        checksum="old-checksum",
+        version=1,
+        version_group_id=version_group_id,
+        is_latest=True,
+    )
+    ingestion_service = FakeIngestionService()
+    service, repository = make_service(
+        ingestion_service=ingestion_service,
+        latest_document=latest_document,
+    )
+
+    await service.ingest_file(
+        filename="rule.txt",
+        file_content=b"new content",
+        embedding_model_id=uuid4(),
+    )
+
+    payload = ingestion_service.ingest.await_args.args[0]
+    assert latest_document.is_latest is False
+    assert repository.db.commit_count == 1
+    assert payload.version == 2
+    assert payload.previous_document_id == previous_id
+    assert payload.version_group_id == version_group_id
+    assert payload.is_latest is True
+
+
+@pytest.mark.asyncio
+async def test_same_filename_same_checksum_rejects_duplicate():
+    content = b"same content"
+    from app.utils.checksum import calculate_sha256
+
+    latest_document = SimpleNamespace(
+        id=uuid4(),
+        checksum=calculate_sha256(content),
+        version=1,
+        version_group_id=uuid4(),
+        is_latest=True,
+    )
+    service, repository = make_service(latest_document=latest_document)
+
+    with pytest.raises(AppException) as exc_info:
+        await service.ingest_file(
+            filename="rule.txt",
+            file_content=content,
+            embedding_model_id=uuid4(),
+        )
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.code == "DUPLICATE_DOCUMENT_FILE"
+    assert latest_document.is_latest is True
+    assert repository.db.commit_count == 0
+
+
+@pytest.mark.asyncio
+async def test_different_filename_uses_separate_version_group():
+    ingestion_service = FakeIngestionService()
+    service, repository = make_service(ingestion_service=ingestion_service)
+
+    await service.ingest_file(
+        filename="other.txt",
+        file_content=b"content",
+        embedding_model_id=uuid4(),
+    )
+
+    payload = ingestion_service.ingest.await_args.args[0]
+    assert payload.version == 1
+    assert repository.find_latest_by_filename_calls[0]["original_filename"] == "other.txt"
 
 
 @pytest.mark.asyncio
 async def test_ingest_markdown_extracts_content():
     ingestion_service = FakeIngestionService()
-    service = make_service(ingestion_service)
+    service, _ = make_service(ingestion_service)
 
     await service.ingest_file(
         filename="buyma_shipping.md",
@@ -102,7 +193,7 @@ async def test_ingest_markdown_extracts_content():
 
 @pytest.mark.asyncio
 async def test_ingest_rejects_unsupported_extension():
-    service = make_service()
+    service, _ = make_service()
 
     with pytest.raises(AppException) as exc_info:
         await service.ingest_file(
@@ -117,7 +208,7 @@ async def test_ingest_rejects_unsupported_extension():
 
 @pytest.mark.asyncio
 async def test_ingest_rejects_empty_file():
-    service = make_service()
+    service, _ = make_service()
 
     with pytest.raises(AppException) as exc_info:
         await service.ingest_file(
@@ -132,7 +223,7 @@ async def test_ingest_rejects_empty_file():
 
 @pytest.mark.asyncio
 async def test_ingest_rejects_large_file():
-    service = make_service()
+    service, _ = make_service()
 
     with pytest.raises(AppException) as exc_info:
         await service.ingest_file(
@@ -160,7 +251,7 @@ async def test_ingest_rejects_large_file():
 async def test_ingest_propagates_knowledge_base_errors(exception):
     ingestion_service = FakeIngestionService()
     ingestion_service.ingest.side_effect = exception
-    service = make_service(ingestion_service)
+    service, _ = make_service(ingestion_service)
 
     with pytest.raises(type(exception)):
         await service.ingest_file(
@@ -169,35 +260,3 @@ async def test_ingest_propagates_knowledge_base_errors(exception):
             embedding_model_id=uuid4(),
             knowledge_base_id=uuid4(),
         )
-
-
-@pytest.mark.asyncio
-async def test_ingest_rejects_duplicate_file_in_same_knowledge_base():
-    knowledge_base_id = uuid4()
-    service = make_service(existing_document=SimpleNamespace(id=uuid4()))
-
-    with pytest.raises(AppException) as exc_info:
-        await service.ingest_file(
-            filename="buyma.txt",
-            file_content=b"content",
-            embedding_model_id=uuid4(),
-            knowledge_base_id=knowledge_base_id,
-        )
-
-    assert exc_info.value.status_code == 409
-    assert exc_info.value.code == "DUPLICATE_DOCUMENT_FILE"
-
-
-@pytest.mark.asyncio
-async def test_same_file_can_be_registered_when_repository_returns_no_duplicate():
-    ingestion_service = FakeIngestionService()
-    service = make_service(ingestion_service=ingestion_service)
-
-    await service.ingest_file(
-        filename="buyma.txt",
-        file_content=b"content",
-        embedding_model_id=uuid4(),
-        knowledge_base_id=uuid4(),
-    )
-
-    ingestion_service.ingest.assert_awaited_once()
