@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -90,15 +91,19 @@ async def test_list_document_versions_returns_all_versions():
 
     original_repository = module.DocumentRepository
     module.DocumentRepository = lambda _: FakeRepository(v2, [v1, v2])
+    authz = SimpleNamespace(require_document_access=AsyncMock(return_value=v2))
+    current_user = SimpleNamespace()
     try:
         response = await list_document_versions(
             document_id=v2.id,
             db=SimpleNamespace(),
-            current_user=SimpleNamespace(),
+            authz=authz,
+            current_user=current_user,
         )
     finally:
         module.DocumentRepository = original_repository
 
+    authz.require_document_access.assert_awaited_once_with(v2.id, current_user)
     assert [item.version for item in response["data"]] == [1, 2]
     assert response["data"][0].is_latest is False
     assert response["data"][1].is_latest is True
@@ -110,11 +115,13 @@ async def test_list_document_versions_raises_when_document_missing():
 
     original_repository = module.DocumentRepository
     module.DocumentRepository = lambda _: FakeRepository(None)
+    authz = SimpleNamespace(require_document_access=AsyncMock(side_effect=NotFoundException("Document")))
     try:
         with pytest.raises(NotFoundException):
             await list_document_versions(
                 document_id=uuid4(),
                 db=SimpleNamespace(),
+                authz=authz,
                 current_user=SimpleNamespace(),
             )
     finally:
@@ -138,14 +145,21 @@ async def test_restore_document_version_returns_new_document():
         }
     )
     queue_service = FakeQueueService()
+    authz = SimpleNamespace(require_document_access=AsyncMock())
+    current_user = SimpleNamespace()
 
     response = await restore_document_version(
         document_id=restored_from.id,
         service=service,
         queue_service=queue_service,
-        current_user=SimpleNamespace(),
+        authz=authz,
+        current_user=current_user,
     )
 
+    authz.require_document_access.assert_awaited_once_with(
+        restored_from.id,
+        current_user,
+    )
     assert service.restored_ids == [restored_from.id]
     assert response["success"] is True
     assert response["message"] == "Document version restored successfully."
@@ -182,14 +196,18 @@ async def test_compare_document_versions_returns_diff():
             "has_changes": True,
         }
     )
+    authz = SimpleNamespace(require_document_access=AsyncMock())
+    current_user = SimpleNamespace()
 
     response = await compare_document_versions(
         document_id=base.id,
         compare_document_id=compare.id,
         service=service,
-        current_user=SimpleNamespace(),
+        authz=authz,
+        current_user=current_user,
     )
 
+    assert authz.require_document_access.await_count == 2
     assert service.compare_calls == [(base.id, compare.id)]
     assert response["success"] is True
     assert response["message"] == "Document version diff fetched successfully."

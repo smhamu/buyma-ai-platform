@@ -3,7 +3,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, require_admin
+from app.api.authz import get_resource_authorization_service
+from app.api.deps import get_current_user
 from app.common.exceptions import NotFoundException
 from app.common.responses import success_response
 from app.core.database import get_db
@@ -22,6 +23,7 @@ from app.services.document_version_rollback_service import (
     DocumentVersionRollbackService,
 )
 from app.services.embedding_queue_service import EmbeddingQueueService
+from app.services.resource_authorization_service import ResourceAuthorizationService
 
 router = APIRouter(prefix="/documents", tags=["Document Versions"])
 
@@ -59,13 +61,11 @@ def get_document_version_diff_service(
 async def list_document_versions(
     document_id: UUID,
     db: AsyncSession = Depends(get_db),
+    authz: ResourceAuthorizationService = Depends(get_resource_authorization_service),
     current_user: User = Depends(get_current_user),
 ):
     repository = DocumentRepository(db)
-    document = await repository.find_by_id(document_id)
-
-    if document is None:
-        raise NotFoundException("Document")
+    document = await authz.require_document_access(document_id, current_user)
 
     versions = await repository.find_versions_by_group(document.version_group_id)
 
@@ -83,8 +83,11 @@ async def compare_document_versions(
     document_id: UUID,
     compare_document_id: UUID,
     service: DocumentVersionDiffService = Depends(get_document_version_diff_service),
+    authz: ResourceAuthorizationService = Depends(get_resource_authorization_service),
     current_user: User = Depends(get_current_user),
 ):
+    await authz.require_document_access(document_id, current_user)
+    await authz.require_document_access(compare_document_id, current_user)
     result = await service.compare(
         base_document_id=document_id,
         compare_document_id=compare_document_id,
@@ -104,8 +107,10 @@ async def restore_document_version(
         get_document_version_rollback_service
     ),
     queue_service: EmbeddingQueueService = Depends(EmbeddingQueueService),
-    current_user: User = Depends(require_admin),
+    authz: ResourceAuthorizationService = Depends(get_resource_authorization_service),
+    current_user: User = Depends(get_current_user),
 ):
+    await authz.require_document_access(document_id, current_user)
     result = await service.restore(document_id)
     task_ids = [
         queue_service.enqueue(job.id)

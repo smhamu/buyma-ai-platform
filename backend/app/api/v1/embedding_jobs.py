@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.authz import get_resource_authorization_service
 from app.api.deps import get_current_user, require_admin
 from app.common.exceptions import AppException
 from app.common.responses import success_response
@@ -12,8 +13,10 @@ from app.repositories.document_chunk_repository import DocumentChunkRepository
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.embedding_job_repository import EmbeddingJobRepository
 from app.repositories.embedding_model_repository import EmbeddingModelRepository
+from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.schemas.embedding_job import EmbeddingJobGenerateRequest, EmbeddingJobResponse
 from app.services.embedding_job_service import EmbeddingJobService
+from app.services.resource_authorization_service import ResourceAuthorizationService
 from app.workers.embedding_tasks import run_embedding_job_task
 
 router = APIRouter(tags=["Embedding Jobs"])
@@ -35,8 +38,10 @@ async def generate_embedding_jobs(
     document_id: UUID,
     payload: EmbeddingJobGenerateRequest,
     service: EmbeddingJobService = Depends(get_embedding_job_service),
+    authz: ResourceAuthorizationService = Depends(get_resource_authorization_service),
     current_user: User = Depends(require_admin),
 ):
+    await authz.require_document_access(document_id, current_user)
     jobs = await service.generate_jobs_for_document(
         document_id=document_id,
         embedding_model_id=payload.embedding_model_id,
@@ -52,8 +57,10 @@ async def generate_embedding_jobs(
 async def list_document_embedding_jobs(
     document_id: UUID,
     service: EmbeddingJobService = Depends(get_embedding_job_service),
+    authz: ResourceAuthorizationService = Depends(get_resource_authorization_service),
     current_user: User = Depends(get_current_user),
 ):
+    await authz.require_document_access(document_id, current_user)
     jobs = await service.list_document_jobs(document_id)
 
     return success_response(
@@ -65,7 +72,7 @@ async def list_document_embedding_jobs(
 @router.get("/embedding-jobs")
 async def list_embedding_jobs(
     service: EmbeddingJobService = Depends(get_embedding_job_service),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     jobs = await service.list_jobs()
 
@@ -79,9 +86,15 @@ async def list_embedding_jobs(
 async def get_embedding_job(
     job_id: UUID,
     service: EmbeddingJobService = Depends(get_embedding_job_service),
+    authz: ResourceAuthorizationService = Depends(get_resource_authorization_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    job = await service.get_job(job_id)
+    job = await authz.require_embedding_job_access(
+        job_id,
+        current_user,
+        EmbeddingJobRepository(db),
+    )
 
     return success_response(
         data=EmbeddingJobResponse.model_validate(job),
@@ -93,9 +106,15 @@ async def get_embedding_job(
 async def enqueue_embedding_job(
     job_id: UUID,
     service: EmbeddingJobService = Depends(get_embedding_job_service),
+    authz: ResourceAuthorizationService = Depends(get_resource_authorization_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    job = await service.get_job(job_id)
+    job = await authz.require_embedding_job_access(
+        job_id,
+        current_user,
+        EmbeddingJobRepository(db),
+    )
 
     if job.status not in {"pending", "failed"}:
         raise AppException(

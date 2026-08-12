@@ -1,4 +1,6 @@
 from types import SimpleNamespace
+from unittest.mock import ANY
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -131,6 +133,7 @@ class FakeFileIngestionService:
 async def test_ingest_document_auto_enqueues_created_jobs():
     jobs = [make_job(), make_job()]
     queue_service = FakeQueueService()
+    authz = SimpleNamespace(require_knowledge_base_access=AsyncMock())
 
     response = await ingest_document(
         payload=DocumentIngestionRequest(
@@ -140,9 +143,11 @@ async def test_ingest_document_auto_enqueues_created_jobs():
         ),
         service=FakeIngestionService(jobs),
         queue_service=queue_service,
+        authz=authz,
         current_user=SimpleNamespace(),
     )
 
+    authz.require_knowledge_base_access.assert_not_awaited()
     assert queue_service.enqueued_job_ids == [job.id for job in jobs]
     assert response["data"]["task_ids"] == ["task-1", "task-2"]
 
@@ -151,6 +156,7 @@ async def test_ingest_document_auto_enqueues_created_jobs():
 async def test_ingest_document_can_skip_auto_enqueue():
     jobs = [make_job()]
     queue_service = FakeQueueService()
+    authz = SimpleNamespace(require_knowledge_base_access=AsyncMock())
 
     response = await ingest_document(
         payload=DocumentIngestionRequest(
@@ -161,6 +167,7 @@ async def test_ingest_document_can_skip_auto_enqueue():
         ),
         service=FakeIngestionService(jobs),
         queue_service=queue_service,
+        authz=authz,
         current_user=SimpleNamespace(),
     )
 
@@ -173,18 +180,25 @@ async def test_ingest_document_can_skip_auto_enqueue():
 async def test_ingest_document_file_auto_enqueues_created_jobs():
     jobs = [make_job(), make_job()]
     queue_service = FakeQueueService()
+    authz = SimpleNamespace(require_knowledge_base_access=AsyncMock())
+    knowledge_base_id = uuid4()
 
     response = await ingest_document_file(
         file=FakeUploadFile("buyma_price.txt", b"content"),
         embedding_model_id=uuid4(),
-        knowledge_base_id=uuid4(),
+        knowledge_base_id=knowledge_base_id,
         chunk_size=500,
         auto_enqueue=True,
         service=FakeFileIngestionService(jobs),
         queue_service=queue_service,
+        authz=authz,
         current_user=SimpleNamespace(),
     )
 
+    authz.require_knowledge_base_access.assert_awaited_once_with(
+        knowledge_base_id,
+        ANY,
+    )
     assert queue_service.enqueued_job_ids == [job.id for job in jobs]
     assert response["message"] == "Document file ingestion completed successfully."
     assert response["data"]["filename"] == "buyma_price.txt"
@@ -195,6 +209,7 @@ async def test_ingest_document_file_auto_enqueues_created_jobs():
 async def test_ingest_document_file_can_skip_auto_enqueue():
     jobs = [make_job()]
     queue_service = FakeQueueService()
+    authz = SimpleNamespace(require_knowledge_base_access=AsyncMock())
 
     response = await ingest_document_file(
         file=FakeUploadFile("buyma_shipping.md", b"# content"),
@@ -204,8 +219,10 @@ async def test_ingest_document_file_can_skip_auto_enqueue():
         auto_enqueue=False,
         service=FakeFileIngestionService(jobs),
         queue_service=queue_service,
+        authz=authz,
         current_user=SimpleNamespace(),
     )
 
+    authz.require_knowledge_base_access.assert_not_awaited()
     assert queue_service.enqueued_job_ids == []
     assert response["data"]["task_ids"] == []

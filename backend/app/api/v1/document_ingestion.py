@@ -3,7 +3,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import require_admin
+from app.api.authz import get_resource_authorization_service
+from app.api.deps import get_current_user
 from app.common.responses import success_response
 from app.core.database import get_db
 from app.models.user import User
@@ -29,6 +30,7 @@ from app.services.document_file_ingestion_service import (
     DocumentFileIngestionService,
 )
 from app.services.embedding_queue_service import EmbeddingQueueService
+from app.services.resource_authorization_service import ResourceAuthorizationService
 
 router = APIRouter(prefix="/documents", tags=["Document Ingestion"])
 
@@ -85,8 +87,14 @@ async def ingest_document(
     payload: DocumentIngestionRequest,
     service: DocumentIngestionService = Depends(get_document_ingestion_service),
     queue_service: EmbeddingQueueService = Depends(get_embedding_queue_service),
-    current_user: User = Depends(require_admin),
+    authz: ResourceAuthorizationService = Depends(get_resource_authorization_service),
+    current_user: User = Depends(get_current_user),
 ):
+    if payload.knowledge_base_id is not None:
+        await authz.require_knowledge_base_access(
+            payload.knowledge_base_id,
+            current_user,
+        )
     result = await service.ingest(payload)
     task_ids: list[str] = []
 
@@ -124,8 +132,14 @@ async def ingest_document_file(
         get_document_file_ingestion_service
     ),
     queue_service: EmbeddingQueueService = Depends(get_embedding_queue_service),
-    current_user: User = Depends(require_admin),
+    authz: ResourceAuthorizationService = Depends(get_resource_authorization_service),
+    current_user: User = Depends(get_current_user),
 ):
+    if knowledge_base_id is not None:
+        await authz.require_knowledge_base_access(
+            knowledge_base_id,
+            current_user,
+        )
     file_content = await file.read()
     result = await service.ingest_file(
         filename=file.filename or "document",
@@ -172,8 +186,10 @@ async def retry_document_ingestion(
         get_document_ingestion_retry_service
     ),
     queue_service: EmbeddingQueueService = Depends(get_embedding_queue_service),
-    current_user: User = Depends(require_admin),
+    authz: ResourceAuthorizationService = Depends(get_resource_authorization_service),
+    current_user: User = Depends(get_current_user),
 ):
+    await authz.require_document_access(document_id, current_user)
     result = await service.retry(document_id)
     task_ids = [
         queue_service.enqueue(job.id)

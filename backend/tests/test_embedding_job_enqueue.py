@@ -11,13 +11,9 @@ from app.common.exceptions import AppException
 @pytest.mark.asyncio
 async def test_enqueue_embedding_job_queues_pending_job():
     job_id = uuid4()
-    service = SimpleNamespace(
-        get_job=AsyncMock(
-            return_value=SimpleNamespace(
-                id=job_id,
-                status="pending",
-            )
-        )
+    job = SimpleNamespace(id=job_id, status="pending")
+    authz = SimpleNamespace(
+        require_embedding_job_access=AsyncMock(return_value=job)
     )
 
     with patch(
@@ -27,11 +23,13 @@ async def test_enqueue_embedding_job_queues_pending_job():
 
         response = await enqueue_embedding_job(
             job_id=job_id,
-            service=service,
+            service=SimpleNamespace(),
+            authz=authz,
+            db=SimpleNamespace(),
             current_user=SimpleNamespace(),
         )
 
-    service.get_job.assert_awaited_once_with(job_id)
+    authz.require_embedding_job_access.assert_awaited_once()
     task.delay.assert_called_once_with(str(job_id))
     assert response["success"] is True
     assert response["data"] == {
@@ -44,13 +42,9 @@ async def test_enqueue_embedding_job_queues_pending_job():
 @pytest.mark.asyncio
 async def test_enqueue_embedding_job_queues_failed_job():
     job_id = uuid4()
-    service = SimpleNamespace(
-        get_job=AsyncMock(
-            return_value=SimpleNamespace(
-                id=job_id,
-                status="failed",
-            )
-        )
+    job = SimpleNamespace(id=job_id, status="failed")
+    authz = SimpleNamespace(
+        require_embedding_job_access=AsyncMock(return_value=job)
     )
 
     with patch(
@@ -60,7 +54,9 @@ async def test_enqueue_embedding_job_queues_failed_job():
 
         response = await enqueue_embedding_job(
             job_id=job_id,
-            service=service,
+            service=SimpleNamespace(),
+            authz=authz,
+            db=SimpleNamespace(),
             current_user=SimpleNamespace(),
         )
 
@@ -70,19 +66,17 @@ async def test_enqueue_embedding_job_queues_failed_job():
 @pytest.mark.asyncio
 async def test_enqueue_embedding_job_rejects_completed_job():
     job_id = uuid4()
-    service = SimpleNamespace(
-        get_job=AsyncMock(
-            return_value=SimpleNamespace(
-                id=job_id,
-                status="completed",
-            )
-        )
+    job = SimpleNamespace(id=job_id, status="completed")
+    authz = SimpleNamespace(
+        require_embedding_job_access=AsyncMock(return_value=job)
     )
 
     with pytest.raises(AppException) as exc_info:
         await enqueue_embedding_job(
             job_id=job_id,
-            service=service,
+            service=SimpleNamespace(),
+            authz=authz,
+            db=SimpleNamespace(),
             current_user=SimpleNamespace(),
         )
 

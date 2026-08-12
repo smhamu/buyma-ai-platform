@@ -29,6 +29,7 @@ def make_knowledge_base(**overrides):
 async def test_create_knowledge_base_returns_response():
     knowledge_base = make_knowledge_base()
     service = SimpleNamespace(create=AsyncMock(return_value=knowledge_base))
+    current_user = SimpleNamespace(id=uuid4())
 
     response = await create_knowledge_base(
         payload=KnowledgeBaseCreate(
@@ -36,9 +37,17 @@ async def test_create_knowledge_base_returns_response():
             description=knowledge_base.description,
         ),
         service=service,
-        current_user=SimpleNamespace(),
+        current_user=current_user,
     )
 
+    service.create.assert_awaited_once_with(
+        {
+            "owner_user_id": current_user.id,
+            "name": knowledge_base.name,
+            "description": knowledge_base.description,
+            "is_active": True,
+        }
+    )
     assert response["success"] is True
     assert response["data"].id == knowledge_base.id
     assert response["data"].name == knowledge_base.name
@@ -47,15 +56,21 @@ async def test_create_knowledge_base_returns_response():
 @pytest.mark.asyncio
 async def test_get_knowledge_base_returns_response():
     knowledge_base = make_knowledge_base()
-    service = SimpleNamespace(get=AsyncMock(return_value=knowledge_base))
+    authz = SimpleNamespace(
+        require_knowledge_base_access=AsyncMock(return_value=knowledge_base)
+    )
+    current_user = SimpleNamespace()
 
     response = await get_knowledge_base(
         knowledge_base_id=knowledge_base.id,
-        service=service,
-        current_user=SimpleNamespace(),
+        authz=authz,
+        current_user=current_user,
     )
 
-    service.get.assert_awaited_once_with(knowledge_base.id)
+    authz.require_knowledge_base_access.assert_awaited_once_with(
+        knowledge_base.id,
+        current_user,
+    )
     assert response["data"].id == knowledge_base.id
 
 
@@ -65,13 +80,20 @@ async def test_delete_knowledge_base_returns_deleted_id():
     service = SimpleNamespace(
         delete=AsyncMock(return_value={"id": str(knowledge_base_id)})
     )
+    authz = SimpleNamespace(require_knowledge_base_access=AsyncMock())
+    current_user = SimpleNamespace()
 
     response = await delete_knowledge_base(
         knowledge_base_id=knowledge_base_id,
         service=service,
-        current_user=SimpleNamespace(),
+        authz=authz,
+        current_user=current_user,
     )
 
+    authz.require_knowledge_base_access.assert_awaited_once_with(
+        knowledge_base_id,
+        current_user,
+    )
     assert response["data"] == {"id": str(knowledge_base_id)}
 
 
@@ -99,13 +121,20 @@ async def test_get_knowledge_base_stats_returns_counts():
         },
     )
     service = SimpleNamespace(get_stats=AsyncMock(return_value=stats))
+    authz = SimpleNamespace(require_knowledge_base_access=AsyncMock())
+    current_user = SimpleNamespace()
 
     response = await get_knowledge_base_stats(
         knowledge_base_id=knowledge_base_id,
         service=service,
-        current_user=SimpleNamespace(),
+        authz=authz,
+        current_user=current_user,
     )
 
+    authz.require_knowledge_base_access.assert_awaited_once_with(
+        knowledge_base_id,
+        current_user,
+    )
     service.get_stats.assert_awaited_once_with(knowledge_base_id)
     assert response["success"] is True
     assert response["message"] == "Knowledge base stats fetched successfully."
@@ -148,6 +177,8 @@ async def test_list_knowledge_base_documents_returns_documents():
             }
         )
     )
+    authz = SimpleNamespace(require_knowledge_base_access=AsyncMock())
+    current_user = SimpleNamespace()
 
     response = await list_knowledge_base_documents(
         knowledge_base_id=knowledge_base_id,
@@ -161,9 +192,14 @@ async def test_list_knowledge_base_documents_returns_documents():
         sort_by="created_at",
         sort_order="desc",
         service=service,
-        current_user=SimpleNamespace(),
+        authz=authz,
+        current_user=current_user,
     )
 
+    authz.require_knowledge_base_access.assert_awaited_once_with(
+        knowledge_base_id,
+        current_user,
+    )
     service.list_documents.assert_awaited_once_with(
         knowledge_base_id=knowledge_base_id,
         page=1,
