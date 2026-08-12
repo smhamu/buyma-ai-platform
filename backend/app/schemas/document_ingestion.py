@@ -15,6 +15,7 @@ class DocumentIngestionRequest(BaseModel):
     status: str = "active"
     embedding_model_id: UUID
     chunk_size: int = Field(default=500, ge=100, le=5000)
+    auto_enqueue: bool = True
 
 
 class DocumentIngestionResponse(BaseModel):
@@ -23,3 +24,4 @@ class DocumentIngestionResponse(BaseModel):
     document: DocumentResponse
     chunks: list[DocumentChunkResponse]
     embedding_jobs: list[EmbeddingJobResponse]
+    task_ids: list[str]

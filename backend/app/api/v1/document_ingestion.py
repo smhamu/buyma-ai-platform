@@ -17,6 +17,7 @@ from app.schemas.document_ingestion import (
 )
 from app.schemas.embedding_job import EmbeddingJobResponse
 from app.services.document_ingestion_service import DocumentIngestionService
+from app.services.embedding_queue_service import EmbeddingQueueService
 
 router = APIRouter(prefix="/documents", tags=["Document Ingestion"])
 
@@ -32,13 +33,23 @@ def get_document_ingestion_service(
     )
 
 
+def get_embedding_queue_service() -> EmbeddingQueueService:
+    return EmbeddingQueueService()
+
+
 @router.post("/ingest")
 async def ingest_document(
     payload: DocumentIngestionRequest,
     service: DocumentIngestionService = Depends(get_document_ingestion_service),
+    queue_service: EmbeddingQueueService = Depends(get_embedding_queue_service),
     current_user: User = Depends(require_admin),
 ):
     result = await service.ingest(payload)
+    task_ids: list[str] = []
+
+    if payload.auto_enqueue:
+        for job in result["embedding_jobs"]:
+            task_ids.append(queue_service.enqueue(job.id))
 
     response = DocumentIngestionResponse(
         document=DocumentResponse.model_validate(result["document"]),
@@ -50,6 +61,7 @@ async def ingest_document(
             EmbeddingJobResponse.model_validate(job)
             for job in result["embedding_jobs"]
         ],
+        task_ids=task_ids,
     )
 
     return success_response(

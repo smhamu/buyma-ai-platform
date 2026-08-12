@@ -1,7 +1,10 @@
 import asyncio
 from uuid import UUID
 
-from app.core.database import AsyncSessionLocal
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
+
+from app.core.config import settings
 from app.models.document import Document  # noqa: F401
 from app.models.document_chunk import DocumentChunk  # noqa: F401
 from app.models.embedding import Embedding  # noqa: F401
@@ -17,14 +20,27 @@ from app.workers.celery_app import celery_app
 
 
 async def _run_embedding_job(job_id: str):
-    async with AsyncSessionLocal() as db:
-        service = EmbeddingService(
-            embedding_repository=EmbeddingRepository(db),
-            job_repository=EmbeddingJobRepository(db),
-            chunk_repository=DocumentChunkRepository(db),
-            model_repository=EmbeddingModelRepository(db),
-        )
-        await service.run_embedding_job(UUID(job_id))
+    engine = create_async_engine(
+        settings.database_url,
+        echo=True,
+        poolclass=NullPool,
+    )
+    session_factory = async_sessionmaker(
+        bind=engine,
+        expire_on_commit=False,
+    )
+
+    try:
+        async with session_factory() as db:
+            service = EmbeddingService(
+                embedding_repository=EmbeddingRepository(db),
+                job_repository=EmbeddingJobRepository(db),
+                chunk_repository=DocumentChunkRepository(db),
+                model_repository=EmbeddingModelRepository(db),
+            )
+            await service.run_embedding_job(UUID(job_id))
+    finally:
+        await engine.dispose()
 
 
 @celery_app.task(name="embedding.run_job")
