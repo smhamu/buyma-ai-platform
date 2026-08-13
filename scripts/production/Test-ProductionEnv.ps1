@@ -32,6 +32,10 @@ if ($values["APP_ENV"] -ne "production") { $errors += "APP_ENV must be productio
 if ($values["DATABASE_ECHO"] -ne "false") { $errors += "DATABASE_ECHO must be false." }
 if ($values["REGISTRATION_ENABLED"] -ne "false") { $errors += "REGISTRATION_ENABLED must be false." }
 if ($values["ENABLE_API_DOCS"] -ne "false") { $errors += "ENABLE_API_DOCS must be false." }
+$hstsHeader = if ($values.ContainsKey("HSTS_HEADER")) { $values["HSTS_HEADER"] } else { "" }
+if ($hstsHeader -notin @("", "max-age=31536000; includeSubDomains")) {
+    $errors += "HSTS_HEADER must be empty or the approved Production value."
+}
 $secretKey = if ($values.ContainsKey("SECRET_KEY")) { $values["SECRET_KEY"] } else { "" }
 if ($secretKey.Length -lt 32) { $errors += "SECRET_KEY must be at least 32 characters." }
 

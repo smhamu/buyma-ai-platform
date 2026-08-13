@@ -26,7 +26,8 @@ $redisPassword = New-RandomHex 32
 
 $content = @"
 APP_ENV=production
-FRONTEND_PORT=8080
+FRONTEND_PORT=8081
+HSTS_HEADER=
 UVICORN_WORKERS=2
 
 POSTGRES_DB=buyma_ai

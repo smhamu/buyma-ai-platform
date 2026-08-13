@@ -25,6 +25,8 @@ services:
       args:
         VITE_API_BASE_URL: /api
     restart: unless-stopped
+    environment:
+      HSTS_HEADER: ${HSTS_HEADER:-}
     ports:
       - "${FRONTEND_PORT:-8080}:8080"
     depends_on:

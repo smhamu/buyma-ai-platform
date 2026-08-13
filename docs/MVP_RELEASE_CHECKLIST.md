@@ -13,6 +13,22 @@ Do not expose the service to the Internet until every P0 item is complete.
 - [ ] Add HSTS only after HTTPS works on the production domain and all subdomains in scope.
 - [x] Run `scripts/production/Test-ProductionEnv.ps1` without errors.
 
+## AWS EC2 / ALB / ACM / Route 53
+
+- [ ] Provision EC2 with encrypted EBS, IMDSv2, least-privilege IAM, and SSM access.
+- [ ] Set EC2 `.env.production` permissions to 600 and validate it without printing secrets.
+- [ ] Restrict EC2 frontend port 8081 inbound to the ALB security group only.
+- [ ] Confirm EC2 has no Internet inbound access to 8081, 8000, 5432, 6379, or 3128.
+- [ ] Configure ALB target group HTTP:8081 health check `/` and confirm healthy.
+- [ ] Issue and DNS-validate the production hostname certificate in regional ACM.
+- [ ] Configure ALB HTTPS 443 with ACM and HTTP 80 to HTTPS redirect.
+- [ ] Create Route 53 Alias record from the production hostname to the ALB.
+- [ ] Verify the public ACM certificate and HTTP-to-HTTPS redirect externally.
+- [ ] Verify HSTS is present over ALB HTTPS and absent on direct localhost HTTP.
+- [ ] Run `Deploy-EC2.sh` successfully against the reviewed release artifact.
+- [ ] Run authenticated HTTPS smoke and Production Playwright E2E against the production hostname.
+- [ ] Verify externally that only ports 80/443 are reachable.
+
 ## Database and identity
 
 - [x] Provision a new production database; do not clone development test data.

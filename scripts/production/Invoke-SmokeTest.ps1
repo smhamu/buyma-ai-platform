@@ -1,11 +1,27 @@
 param(
     [string]$BaseUrl = "http://localhost:8080",
+    [string]$HttpUrl = "",
     [string]$AdminEmail = $env:SMOKE_ADMIN_EMAIL,
     [string]$AdminPassword = $env:SMOKE_ADMIN_PASSWORD
 )
 
 $ErrorActionPreference = "Stop"
 $base = $BaseUrl.TrimEnd('/')
+
+if (-not [string]::IsNullOrWhiteSpace($HttpUrl)) {
+    if (-not $base.StartsWith("https://", [StringComparison]::OrdinalIgnoreCase)) {
+        throw "BaseUrl must use HTTPS when HttpUrl redirect validation is enabled."
+    }
+    $headers = curl.exe --silent --show-error --head --output NUL `
+        --write-out "%{http_code}|%{redirect_url}" $HttpUrl.TrimEnd('/')
+    if ($LASTEXITCODE -ne 0) { throw "HTTP redirect check failed." }
+    $statusCode, $redirectUrl = $headers -split '\|', 2
+    if ($statusCode -notin @("301", "302", "307", "308") -or
+        -not $redirectUrl.StartsWith($base, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "HTTP endpoint did not redirect to the expected HTTPS origin."
+    }
+    Write-Host "PASS HTTP -> HTTPS redirect"
+}
 
 foreach ($path in @("/", "/login", "/knowledge-bases", "/api/health")) {
     $statusCode = curl.exe --silent --show-error --output NUL --write-out "%{http_code}" "$base$path"
