@@ -34,7 +34,10 @@ Do not expose the service to the Internet until every P0 item is complete.
 
 - [x] Frontend, Backend, PostgreSQL, Redis, and Celery Worker are healthy.
 - [x] Celery Beat is running exactly once.
-- [ ] OpenAI billing limit, project quota, and provider alerts are configured.
+- [x] OpenAI Production Project spend limit, 50/80/100% alerts, and allowed-model restrictions are configured.
+- [x] Restrict Production Backend and Celery Worker egress through a no-log allowlist proxy for `api.openai.com:443` only.
+- [x] Verify the current Production OpenAI API key authenticates through the allowlist proxy.
+- [x] Verify Production TXT ingestion reaches Ready and RAG returns sources through the OpenAI allowlist proxy.
 - [ ] Confirm nginx rate limiting returns HTTP 429 under sustained abuse.
 - [ ] Review application, nginx, and Celery logs without Authorization headers or secrets.
 

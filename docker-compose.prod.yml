@@ -1,4 +1,23 @@
 services:
+  egress_proxy:
+    image: ubuntu/squid@sha256:8a3baed477e2c282ab8aa5edad442f69873246964f225c5c2ae8364b6610963c
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/egress-proxy/squid.conf:/etc/squid/squid.conf:ro
+    expose:
+      - "3128"
+    healthcheck:
+      test: ["CMD-SHELL", "squid -k parse >/dev/null 2>&1 && kill -0 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+    networks:
+      - egress_proxy
+      - outbound
+    security_opt:
+      - no-new-privileges:true
+
   frontend:
     build:
       context: ./frontend
@@ -36,6 +55,15 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      egress_proxy:
+        condition: service_healthy
+    environment:
+      HTTPS_PROXY: http://egress_proxy:3128
+      HTTP_PROXY: http://egress_proxy:3128
+      NO_PROXY: backend,postgres,redis,frontend,localhost,127.0.0.1
+      https_proxy: http://egress_proxy:3128
+      http_proxy: http://egress_proxy:3128
+      no_proxy: backend,postgres,redis,frontend,localhost,127.0.0.1
     command: >-
       uvicorn app.main:app --host 0.0.0.0 --port 8000
       --workers ${UVICORN_WORKERS:-2} --proxy-headers --forwarded-allow-ips=*
@@ -48,6 +76,7 @@ services:
     networks:
       - app
       - data
+      - egress_proxy
     security_opt:
       - no-new-privileges:true
 
@@ -63,6 +92,15 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      egress_proxy:
+        condition: service_healthy
+    environment:
+      HTTPS_PROXY: http://egress_proxy:3128
+      HTTP_PROXY: http://egress_proxy:3128
+      NO_PROXY: backend,postgres,redis,frontend,localhost,127.0.0.1
+      https_proxy: http://egress_proxy:3128
+      http_proxy: http://egress_proxy:3128
+      no_proxy: backend,postgres,redis,frontend,localhost,127.0.0.1
     command: celery -A app.workers.celery_app.celery_app worker --loglevel=INFO
     healthcheck:
       test: ["CMD-SHELL", "celery -A app.workers.celery_app.celery_app inspect ping -d celery@$$HOSTNAME --timeout 5 | grep -q pong"]
@@ -72,6 +110,7 @@ services:
       retries: 3
     networks:
       - data
+      - egress_proxy
     security_opt:
       - no-new-privileges:true
 
@@ -138,6 +177,9 @@ services:
 
 networks:
   edge:
+  egress_proxy:
+    internal: true
+  outbound:
   app:
     internal: true
   data:

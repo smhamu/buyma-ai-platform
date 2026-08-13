@@ -72,3 +72,26 @@ Remove-Item Env:SMOKE_ADMIN_EMAIL,Env:SMOKE_ADMIN_PASSWORD
 The scripts never print secrets or tokens. Complete `MVP_RELEASE_CHECKLIST.md`
 before release, including OpenAI key rotation, billing/quota alerts, HTTPS redirect,
 HSTS after HTTPS validation, and Production Playwright E2E.
+
+## 6. OpenAI egress policy
+
+Production Backend and Celery Worker use the explicit Squid proxy configured in
+`docker-compose.prod.yml`. The application containers remain attached only to
+internal networks; only the proxy joins the outbound network. Squid permits HTTPS
+CONNECT to `api.openai.com:443` and denies every other destination. It has no host
+published port, disables access and cache-store logs, and never terminates TLS, so
+OpenAI Authorization headers and request bodies remain encrypted end to end.
+
+Validate the policy after deployment without printing credentials:
+
+```powershell
+docker-compose -p buyma-ai-production --env-file .env.production `
+  -f docker-compose.prod.yml exec -T backend `
+  python -c "import urllib.request,urllib.error; urllib.request.urlopen('https://api.openai.com/v1/models')"
+```
+
+An unauthenticated OpenAI request is expected to return HTTP 401, which proves the
+TLS tunnel reached OpenAI. A request to another HTTPS destination must fail with a
+proxy HTTP 403. Removing the proxy environment variables must make direct Internet
+access fail. Do not enable Docker Desktop or host-level proxy bypasses for the
+application containers.
