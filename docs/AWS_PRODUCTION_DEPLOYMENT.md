@@ -143,6 +143,31 @@ Do not paste secrets into user-data, AMI build logs, CI logs, tickets, or shell
 arguments. AWS Secrets Manager or encrypted SSM Parameter Store injection is a
 follow-up; define IAM access, rotation, audit, and failure behavior before adoption.
 
+### Generate `.env.production` from SSM Parameter Store
+
+Attach an EC2 Instance Profile role; do not install `AWS_ACCESS_KEY_ID` or other
+long-lived AWS credentials on the instance. Its IAM policy should allow
+`ssm:GetParametersByPath` only for the regional resource path
+`parameter/buyma-ai/production/*`. When SecureString parameters use a customer-managed
+KMS key, also allow `kms:Decrypt` only for that key and constrain the encryption
+context where possible. The AWS CLI region must be configured through EC2 deployment
+configuration or `AWS_REGION`.
+
+From the repository root:
+
+```bash
+chmod 750 scripts/production/Load-ProductionEnvFromSSM.sh
+./scripts/production/Load-ProductionEnvFromSSM.sh
+scripts/production/Test-ProductionEnv.sh .env.production
+```
+
+The loader calls `aws ssm get-parameters-by-path --with-decryption` only for
+`/buyma-ai/production/`, maps `JWT_SECRET` to `SECRET_KEY`, URL-encodes database and
+Redis passwords in connection URLs, validates a mode-600 candidate, and atomically
+replaces `.env.production`. Admin bootstrap parameters are intentionally not written
+to the env file. A failed retrieval, missing value, placeholder, invalid worker count,
+or failed validation leaves any existing `.env.production` untouched.
+
 ## Deployment and migration
 
 Deploy an immutable artifact or a reviewed commit. Record the prior revision/image
