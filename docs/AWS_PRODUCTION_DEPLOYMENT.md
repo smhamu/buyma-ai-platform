@@ -162,7 +162,7 @@ scripts/production/Test-ProductionEnv.sh .env.production
 ```
 
 The loader calls `aws ssm get-parameters-by-path --with-decryption` only for
-`/buyma-ai/production/`, maps `JWT_SECRET` to `SECRET_KEY`, URL-encodes database and
+`/buyma-ai/production/`, reads `SECRET_KEY`, URL-encodes database and
 Redis passwords in connection URLs, validates a mode-600 candidate, and atomically
 replaces `.env.production`. Admin bootstrap parameters are intentionally not written
 to the env file. A failed retrieval, missing value, placeholder, invalid worker count,

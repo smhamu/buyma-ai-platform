@@ -62,7 +62,7 @@ from urllib.parse import quote
 
 response_path, template_path, generated_path, parameter_path = sys.argv[1:]
 required = {
-    "JWT_SECRET",
+    "SECRET_KEY",
     "OPENAI_API_KEY",
     "POSTGRES_PASSWORD",
     "REDIS_PASSWORD",
@@ -113,7 +113,7 @@ try:
         abort()
     if not re.fullmatch(r"[1-9][0-9]*", values["UVICORN_WORKERS"]):
         abort()
-    if len(values["JWT_SECRET"]) < 32:
+    if len(values["SECRET_KEY"]) < 32:
         abort()
 
     template = Path(template_path).read_text(encoding="utf-8")
@@ -157,7 +157,7 @@ try:
         "REDIS_PASSWORD": dotenv_quote(redis_password),
         "CELERY_BROKER_URL": dotenv_quote(f"redis://:{redis_url_password}@redis:6379/0"),
         "CELERY_RESULT_BACKEND": dotenv_quote(f"redis://:{redis_url_password}@redis:6379/1"),
-        "SECRET_KEY": dotenv_quote(values["JWT_SECRET"]),
+        "SECRET_KEY": dotenv_quote(values["SECRET_KEY"]),
         "OPENAI_API_KEY": dotenv_quote(values["OPENAI_API_KEY"]),
     }
 
