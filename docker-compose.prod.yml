@@ -40,6 +40,7 @@ services:
       - /var/cache/nginx
       - /var/run
       - /tmp
+      - /etc/nginx/conf.d:uid=101,gid=101,mode=0755
     security_opt:
       - no-new-privileges:true
 
