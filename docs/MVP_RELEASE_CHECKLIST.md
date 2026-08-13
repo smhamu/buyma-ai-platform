@@ -4,22 +4,22 @@ Do not expose the service to the Internet until every P0 item is complete.
 
 ## Deployment configuration
 
-- [ ] Copy `.env.production.example` to `.env.production` outside source control.
-- [ ] Replace every `CHANGE_ME` value with independently generated secrets.
-- [ ] Confirm `APP_ENV=production`, `DATABASE_ECHO=false`, `REGISTRATION_ENABLED=false`, and `ENABLE_API_DOCS=false`.
+- [x] Copy `.env.production.example` to `.env.production` outside source control.
+- [x] Replace every `CHANGE_ME` value with independently generated secrets.
+- [x] Confirm `APP_ENV=production`, `DATABASE_ECHO=false`, `REGISTRATION_ENABLED=false`, and `ENABLE_API_DOCS=false`.
 - [ ] Confirm only the TLS reverse proxy/frontend port is Internet-accessible.
-- [ ] Confirm PostgreSQL, Redis, and FastAPI have no host-published ports.
+- [x] Confirm PostgreSQL, Redis, and FastAPI have no host-published ports.
 - [ ] Configure TLS termination, HTTP-to-HTTPS redirect, and the production domain.
 - [ ] Add HSTS only after HTTPS works on the production domain and all subdomains in scope.
-- [ ] Run `scripts/production/Test-ProductionEnv.ps1` without errors.
+- [x] Run `scripts/production/Test-ProductionEnv.ps1` without errors.
 
 ## Database and identity
 
-- [ ] Provision a new production database; do not clone development test data.
-- [ ] Run `docker compose -f docker-compose.prod.yml run --rm backend alembic upgrade head` as a deployment step.
-- [ ] Verify `docker compose -f docker-compose.prod.yml run --rm backend alembic current` reports the expected head.
-- [ ] Create the initial administrator interactively with `docker compose -f docker-compose.prod.yml run --rm backend python scripts/create_admin.py`.
-- [ ] Confirm no `tx-*`, `kb-stats-e2e-*`, or `e2e-*` users/resources exist.
+- [x] Provision a new production database; do not clone development test data.
+- [x] Run `docker compose -f docker-compose.prod.yml run --rm backend alembic upgrade head` as a deployment step.
+- [x] Verify `docker compose -f docker-compose.prod.yml run --rm backend alembic current` reports the expected head.
+- [x] Create the initial administrator without exposing its password in command arguments or logs.
+- [x] Confirm no `tx-*`, `kb-stats-e2e-*`, or `e2e-*` users/resources exist.
 
 ## Backup and restore drill
 
@@ -31,13 +31,15 @@ Do not expose the service to the Internet until every P0 item is complete.
 
 ## Runtime health and cost controls
 
-- [ ] Frontend, Backend, PostgreSQL, Redis, and Celery Worker are healthy.
-- [ ] Celery Beat is running exactly once.
+- [x] Frontend, Backend, PostgreSQL, Redis, and Celery Worker are healthy.
+- [x] Celery Beat is running exactly once.
 - [ ] OpenAI billing limit, project quota, and provider alerts are configured.
 - [ ] Confirm nginx rate limiting returns HTTP 429 under sustained abuse.
 - [ ] Review application, nginx, and Celery logs without Authorization headers or secrets.
 
 ## Release verification
+
+- [x] Production-like localhost smoke test passes for `/`, `/login`, `/api/health`, login, and the Knowledge Base list.
 
 - [ ] Backend: `pytest -m "not evaluation"`.
 - [ ] Frontend: build, lint, typecheck, and unit tests.
