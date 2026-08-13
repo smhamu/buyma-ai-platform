@@ -172,7 +172,7 @@ try:
         if "CHANGE_ME" in value:
             abort()
 
-    Path(generated_path).write_text(generated, encoding="utf-8", newline="\n")
+    Path(generated_path).write_text(generated, encoding="utf-8")
 except (OSError, ValueError, TypeError, json.JSONDecodeError):
     abort()
 PY
