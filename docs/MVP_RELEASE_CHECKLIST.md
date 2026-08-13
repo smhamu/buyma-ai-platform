@@ -24,10 +24,11 @@ Do not expose the service to the Internet until every P0 item is complete.
 ## Backup and restore drill
 
 - [ ] Create an encrypted, access-controlled backup location outside the application host.
-- [ ] Run `docker compose -f docker-compose.prod.yml exec -T postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc > buyma-ai.dump`.
-- [ ] Restore into a disposable database and verify it: `pg_restore --clean --if-exists --no-owner --dbname=<restore-db> buyma-ai.dump`.
+- [x] Create a custom-format Production dump without passing binary data through a PowerShell pipeline, and validate it with `pg_restore --list`.
+- [x] Restore into a disposable database and verify Alembic head, required tables, active Admin presence, and row counts.
+- [x] Confirm the restore database and container-side temporary dump are removed after the drill.
 - [ ] Record backup retention, owner, schedule, recovery point objective, and recovery time objective.
-- [ ] Run `Backup-Postgres.ps1` and `Test-Restore.ps1` against the production-like environment.
+- [x] Run `Backup-Postgres.ps1` and `Test-Restore.ps1` against the production-like environment.
 
 ## Runtime health and cost controls
 
