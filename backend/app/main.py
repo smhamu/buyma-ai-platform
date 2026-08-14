@@ -22,6 +22,8 @@ from app.api.v1.rag import router as rag_router
 from app.api.v1.knowledge_bases import router as knowledge_bases_router
 from app.api.v1.document_versions import router as document_versions_router
 from app.common.exception_handlers import validation_exception_handler
+from app.api.v1.suppliers import router as suppliers_router
+from app.api.v1.product_research import router as product_research_router
 
 
 setup_logging()
@@ -93,6 +95,8 @@ def get_env():
 
 app.include_router(auth_router)
 app.include_router(products_router)
+app.include_router(suppliers_router)
+app.include_router(product_research_router)
 app.include_router(knowledge_bases_router)
 app.include_router(document_ingestion_router)
 app.include_router(document_versions_router)

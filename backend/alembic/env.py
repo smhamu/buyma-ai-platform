@@ -16,6 +16,8 @@ from app.models.embedding_model import EmbeddingModel
 from app.models.embedding_job import EmbeddingJob
 from app.models.embedding import Embedding
 from app.models.knowledge_base import KnowledgeBase
+from app.models.supplier import Supplier
+from app.models.product_research_candidate import ProductResearchCandidate
 from app.core.config import settings
 
 # this is the Alembic Config object, which provides
