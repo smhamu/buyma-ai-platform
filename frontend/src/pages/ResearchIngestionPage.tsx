@@ -216,11 +216,18 @@ export function ResearchIngestionPage() {
                           )}
                         <button
                           className="secondary-button"
-                          disabled={!!x.candidate_id}
                           onClick={async () => {
-                          if (window.confirm("Delete this source record?")) {
-                              await deleteResearchSource(x.id);
-                              await load();
+                            if (window.confirm("Delete this source record?")) {
+                              try {
+                                await deleteResearchSource(x.id);
+                                await load();
+                              } catch (deleteError) {
+                                setError(
+                                  deleteError instanceof Error
+                                    ? deleteError.message
+                                    : "Delete failed.",
+                                );
+                              }
                             }
                           }}
                         >

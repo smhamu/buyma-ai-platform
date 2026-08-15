@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  ApiClientError,
-  apiClient,
-  configureApiClient,
-} from "./api";
+import { ApiClientError, apiClient, configureApiClient } from "./api";
 
 describe("apiClient", () => {
   beforeEach(() => {
@@ -52,5 +48,32 @@ describe("apiClient", () => {
     await expect(apiClient.get("/auth/me")).rejects.toBeInstanceOf(
       ApiClientError,
     );
+  });
+
+  it("lets the browser set multipart content type and boundary", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          success: true,
+          message: "uploaded",
+          data: { success_count: 1 },
+        }),
+        { status: 200 },
+      ),
+    );
+    const body = new FormData();
+    const file = new File(["supplier,brand"], "research.csv", {
+      type: "text/csv",
+    });
+    body.append("file", file);
+
+    await apiClient.postForm("/research-ingestion/csv", body);
+
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    expect(init?.body).toBe(body);
+    const headers = new Headers(init?.headers);
+    expect(headers.has("Content-Type")).toBe(false);
+    expect(headers.get("Authorization")).toBe("Bearer token");
+    expect(body.get("file")).toBe(file);
   });
 });
