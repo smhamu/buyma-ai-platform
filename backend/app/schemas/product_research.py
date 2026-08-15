@@ -8,6 +8,10 @@ from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
 from app.schemas.supplier import CurrencyCode, VatPolicy
 
 AvailabilityStatus = Literal["unknown", "in_stock", "out_of_stock", "preorder"]
+ProductPurchaseRestriction = Literal[
+    "normal", "pre_order", "personalized", "made_to_order",
+    "client_advisor_only", "boutique_only", "research_only", "unknown",
+]
 CandidateResearchStatus = Literal[
     "discovered", "reviewing", "profitable", "unprofitable", "rejected", "ready_for_listing"
 ]
@@ -32,6 +36,7 @@ class ProductResearchInput(BaseModel):
     buyma_price: Decimal = Field(gt=0)
     buyma_fee_rate: Decimal = Field(ge=0, le=1)
     availability_status: AvailabilityStatus = "unknown"
+    purchase_restriction: ProductPurchaseRestriction | None = "unknown"
     research_status: CandidateResearchStatus = "discovered"
     checked_at: datetime | None = None
     online_purchase_available: bool = True
@@ -60,6 +65,7 @@ class ProductResearchUpdate(BaseModel):
     buyma_price: Decimal | None = Field(default=None, gt=0)
     buyma_fee_rate: Decimal | None = Field(default=None, ge=0, le=1)
     availability_status: AvailabilityStatus | None = None
+    purchase_restriction: ProductPurchaseRestriction | None = None
     research_status: CandidateResearchStatus | None = None
     checked_at: datetime | None = None
     is_active: bool | None = None

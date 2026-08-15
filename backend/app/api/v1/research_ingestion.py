@@ -28,7 +28,7 @@ def get_service(db: AsyncSession = Depends(get_db)):
 
 @router.post("/url")
 async def register_url(payload: UrlIngestionRequest, service: ResearchIngestionService = Depends(get_service), user: User = Depends(get_current_user)):
-    source = await service.register_url(payload.supplier_id, str(payload.url), user.id, user.role == "admin", payload.category_id)
+    source = await service.register_url(payload.supplier_id, str(payload.url), user.id, user.role == "admin", payload.category_id, payload.purchase_restriction)
     return success_response(data=ResearchSourceResponse.model_validate(source), message="Source URL registered. No external request was made.")
 
 

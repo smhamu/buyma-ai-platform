@@ -21,7 +21,7 @@ class ResearchIngestionService:
         if source is None: raise NotFoundException("Research ingestion")
         return source
 
-    async def register_url(self, supplier_id: UUID, url: str, owner_id: UUID, is_admin: bool = False, category_id: UUID | None = None):
+    async def register_url(self, supplier_id: UUID, url: str, owner_id: UUID, is_admin: bool = False, category_id: UUID | None = None, purchase_restriction: str | None = "unknown"):
         supplier = await (self.suppliers.find_by_id(supplier_id) if is_admin else self.suppliers.find_by_id_and_owner(supplier_id, owner_id))
         if supplier is None: raise NotFoundException("Supplier")
         normalized = normalize_research_url(url)
@@ -30,7 +30,7 @@ class ResearchIngestionService:
         if duplicate: raise AppException(409, "DUPLICATE_SOURCE_PRODUCT", "This supplier product URL is already registered.")
         if category_id is not None and (self.categories is None or await self.categories.find_by_id(category_id) is None):
             raise NotFoundException("Product category")
-        return await self.repository.create({"owner_user_id": owner_id, "supplier_id": supplier.id, "category_id": category_id, "source_type": "url_manual", "source_url": url, "normalized_source_url": normalized, "processing_status": "pending"})
+        return await self.repository.create({"owner_user_id": owner_id, "supplier_id": supplier.id, "category_id": category_id, "purchase_restriction": purchase_restriction or "unknown", "source_type": "url_manual", "source_url": url, "normalized_source_url": normalized, "processing_status": "pending"})
 
     async def import_csv(self, content: bytes, owner_id: UUID, is_admin: bool = False):
         if len(content) > 2_000_000: raise AppException(413, "CSV_TOO_LARGE", "CSV files are limited to 2 MB.")
@@ -55,6 +55,8 @@ class ResearchIngestionService:
                 if currency not in {"EUR", "JPY", "GBP", "CHF", "USD"}: raise ValueError
                 availability = row["availability"]
                 if availability not in {"unknown", "in_stock", "out_of_stock", "preorder"}: raise ValueError
+                restriction = (row.get("purchase_restriction") or "unknown").strip()
+                if restriction not in {"normal", "pre_order", "personalized", "made_to_order", "client_advisor_only", "boutique_only", "research_only", "unknown"}: raise ValueError
                 if await self.repository.find_duplicate(supplier.id, normalized, row.get("supplier_product_code") or None):
                     results.append({"row": number, "status": "duplicate", "message": "Already registered."}); continue
                 category = None
@@ -62,7 +64,7 @@ class ResearchIngestionService:
                 if category_code:
                     category = await self.categories.find_by_code(category_code) if self.categories else None
                     if category is None: raise AppException(422, "INVALID_CATEGORY", "Unknown category code.")
-                source = await self.repository.create({"owner_user_id": owner_id, "supplier_id": supplier.id, "brand_id": brand.id, "category_id": category.id if category else None, "source_type": "csv", "source_url": row["product_url"], "normalized_source_url": normalized, "external_product_id": row.get("supplier_product_code") or None, "raw_title": row["product_name"], "raw_brand": row["brand"], "raw_price": price, "raw_currency": currency, "raw_availability": availability, "normalized_title": row["product_name"].strip(), "normalized_price": price, "normalized_currency": currency, "normalized_availability": availability, "processing_status": "matched"})
+                source = await self.repository.create({"owner_user_id": owner_id, "supplier_id": supplier.id, "brand_id": brand.id, "category_id": category.id if category else None, "purchase_restriction": restriction, "source_type": "csv", "source_url": row["product_url"], "normalized_source_url": normalized, "external_product_id": row.get("supplier_product_code") or None, "raw_title": row["product_name"], "raw_brand": row["brand"], "raw_price": price, "raw_currency": currency, "raw_availability": availability, "normalized_title": row["product_name"].strip(), "normalized_price": price, "normalized_currency": currency, "normalized_availability": availability, "processing_status": "matched"})
                 results.append({"row": number, "status": "success", "source_id": source.id})
             except Exception as exc:
                 await self.repository.db.rollback()
@@ -75,7 +77,7 @@ class ResearchIngestionService:
             raise AppException(422, "SOURCE_NOT_READY", "The source must be normalized and matched before conversion.")
         supplier = await (self.suppliers.find_by_id(source.supplier_id) if is_admin else self.suppliers.find_by_id_and_owner(source.supplier_id, owner_id))
         if not supplier: raise NotFoundException("Supplier")
-        values = {"owner_user_id": owner_id, "source_product_id": source.id, "supplier_id": supplier.id, "brand_id": source.brand_id, "category_id": source.category_id, "supplier_product_url": source.source_url, "supplier_product_code": source.external_product_id, "product_name": source.normalized_title, "supplier_price": source.normalized_price, "supplier_currency": source.normalized_currency, "vat_policy": supplier.vat_policy, "vat_rate": supplier.vat_rate, "japan_shipping_cost": payload.japan_shipping_cost if payload.japan_shipping_cost is not None else (supplier.japan_shipping_cost or 0), "exchange_rate": payload.exchange_rate, "estimated_import_cost": payload.estimated_import_cost, "estimated_other_cost": payload.estimated_other_cost, "buyma_price": payload.buyma_price, "buyma_fee_rate": payload.buyma_fee_rate, "availability_status": source.normalized_availability or "unknown", "research_status": "discovered", "online_purchase_available": True, "is_active": True}
+        values = {"owner_user_id": owner_id, "source_product_id": source.id, "supplier_id": supplier.id, "brand_id": source.brand_id, "category_id": source.category_id, "supplier_product_url": source.source_url, "supplier_product_code": source.external_product_id, "product_name": source.normalized_title, "supplier_price": source.normalized_price, "supplier_currency": source.normalized_currency, "vat_policy": supplier.vat_policy, "vat_rate": supplier.vat_rate, "japan_shipping_cost": payload.japan_shipping_cost if payload.japan_shipping_cost is not None else (supplier.japan_shipping_cost or 0), "exchange_rate": payload.exchange_rate, "estimated_import_cost": payload.estimated_import_cost, "estimated_other_cost": payload.estimated_other_cost, "buyma_price": payload.buyma_price, "buyma_fee_rate": payload.buyma_fee_rate, "availability_status": source.normalized_availability or "unknown", "purchase_restriction": source.purchase_restriction or "unknown", "research_status": "discovered", "online_purchase_available": True, "is_active": True}
         values = ProductResearchService.apply_calculation(values)
         candidate = await self.candidates.create(values)
         source.candidate_id, source.processing_status = candidate.id, "candidate_created"

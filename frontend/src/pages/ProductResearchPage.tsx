@@ -239,6 +239,9 @@ export function ProductResearchPage() {
                         <div className="subtle">
                           {label(c.availability_status)}
                         </div>
+                        <div className="subtle">
+                          {label(c.purchase_restriction || "unknown")}
+                        </div>
                       </td>
                       <td>
                         <div className="row-actions">

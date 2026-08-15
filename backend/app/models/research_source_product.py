@@ -34,6 +34,7 @@ class ResearchSourceProduct(Base):
     normalized_price: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
     normalized_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     normalized_availability: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    purchase_restriction: Mapped[str | None] = mapped_column(String(32), nullable=True, default="unknown", index=True)
     processing_status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending", index=True)
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)

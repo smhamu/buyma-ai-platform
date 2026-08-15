@@ -8,10 +8,10 @@ import type {
 
 export const fetchResearchSources = (query = "") =>
   apiClient.get<ResearchSourcePage>(`/research-ingestion?${query}`);
-export const registerResearchUrl = (supplier_id: string, url: string, category_id: string|null = null) =>
-  apiClient.post<ResearchSource, { supplier_id: string; url: string; category_id:string|null }>(
+export const registerResearchUrl = (supplier_id: string, url: string, category_id: string|null = null, purchase_restriction = "unknown") =>
+  apiClient.post<ResearchSource, { supplier_id: string; url: string; category_id:string|null; purchase_restriction:string }>(
     "/research-ingestion/url",
-    { supplier_id, url, category_id },
+    { supplier_id, url, category_id, purchase_restriction },
   );
 export const importResearchCsv = (file: File) => {
   const body = new FormData();

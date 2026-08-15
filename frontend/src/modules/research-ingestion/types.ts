@@ -6,6 +6,7 @@ export type ResearchSource = {
   raw_price:string|null; raw_currency:string|null; normalized_title:string|null;
   normalized_price:string|null; normalized_currency:string|null;
   normalized_availability:string|null; processing_status:string;
+  purchase_restriction:string|null;
   candidate_id:string|null; created_at:string;
 };
 export type ResearchSourcePage = Paginated<ResearchSource>;

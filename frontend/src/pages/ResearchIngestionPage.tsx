@@ -163,6 +163,7 @@ export function ResearchIngestionPage() {
                   <th>Product</th>
                   <th>Price</th>
                   <th>Status</th>
+                  <th>Restriction</th>
                   <th>Candidate</th>
                   <th>Created</th>
                   <th>Actions</th>
@@ -196,6 +197,7 @@ export function ResearchIngestionPage() {
                     <td>
                       <Badge>{x.processing_status}</Badge>
                     </td>
+                    <td><Badge>{(x.purchase_restriction || "unknown").replace(/_/g, " ")}</Badge></td>
                     <td>
                       {x.candidate_id ? (
                         <Link
@@ -287,14 +289,15 @@ function UrlForm({
   const [supplier, setSupplier] = useState("");
   const [url, setUrl] = useState("");
   const [category, setCategory] = useState("");
+  const [restriction, setRestriction] = useState("unknown");
   const [error, setError] = useState("");
   const selected = suppliers.find((x) => x.id === supplier);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
       await (category
-        ? registerResearchUrl(supplier, url, category)
-        : registerResearchUrl(supplier, url));
+        ? registerResearchUrl(supplier, url, category, restriction)
+        : registerResearchUrl(supplier, url, null, restriction));
       await onSaved();
       onClose();
     } catch (x) {
@@ -357,6 +360,12 @@ function UrlForm({
             required
           />
         </label>
+        <label className="form-field">
+          Purchase restriction (optional)
+          <select className="form-field__input" value={restriction} onChange={(e) => setRestriction(e.target.value)}>
+            {["unknown", "normal", "pre_order", "personalized", "made_to_order", "client_advisor_only", "boutique_only", "research_only"].map((value) => <option key={value} value={value}>{value.replace(/_/g, " ")}</option>)}
+          </select>
+        </label>
         <p className="subtle">
           Manual URL registration only. This action does not fetch the external
           website.
@@ -402,7 +411,7 @@ function CsvForm({
         <p>
           Expected columns: supplier, brand, product_url, product_name,
           supplier_product_code, supplier_price, currency, availability,
-          buyma_price, category_code (optional)
+          buyma_price, category_code (optional), purchase_restriction (optional)
         </p>
         {error && <div className="form-error-banner">{error}</div>}
         <input

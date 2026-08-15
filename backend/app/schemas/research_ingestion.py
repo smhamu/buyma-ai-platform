@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
 
-from app.schemas.product_research import AvailabilityStatus
+from app.schemas.product_research import AvailabilityStatus, ProductPurchaseRestriction
 from app.schemas.supplier import CurrencyCode
 
 SourceType = Literal["manual", "url_manual", "csv", "official_api", "structured_data", "html_parser", "disabled"]
@@ -16,6 +16,7 @@ class UrlIngestionRequest(BaseModel):
     supplier_id: UUID
     url: AnyHttpUrl
     category_id: UUID | None = None
+    purchase_restriction: ProductPurchaseRestriction | None = "unknown"
 
 
 class ResearchSourceResponse(BaseModel):
@@ -38,6 +39,7 @@ class ResearchSourceResponse(BaseModel):
     normalized_price: Decimal | None
     normalized_currency: str | None
     normalized_availability: str | None
+    purchase_restriction: ProductPurchaseRestriction | None
     processing_status: ProcessingStatus
     error_code: str | None
     error_message: str | None

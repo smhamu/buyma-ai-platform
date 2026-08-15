@@ -46,6 +46,9 @@ class ProductResearchCandidate(Base):
     availability_status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="unknown", index=True
     )
+    purchase_restriction: Mapped[str | None] = mapped_column(
+        String(32), nullable=True, default="unknown", index=True
+    )
     research_status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="discovered", index=True
     )

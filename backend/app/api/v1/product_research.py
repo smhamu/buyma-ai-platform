@@ -40,8 +40,8 @@ def _database_values(payload) -> dict:
 async def calculate_candidate(payload: ProductResearchCreate, service: ProductResearchService = Depends(get_product_research_service), current_user: User = Depends(get_current_user)):
     supplier = await service.validate_supplier(payload.supplier_id, current_user.id, current_user.role == "admin")
     brand = await service.validate_brand(payload.brand_id)
-    policy, enabled, _ = await service.policy_service.resolve(payload.brand_id, payload.category_id)
-    service.validate_listing_status(supplier, brand, payload.research_status, online_purchase_available=payload.online_purchase_available, availability_status=payload.availability_status, resolved_policy=policy, resolved_research_enabled=enabled)
+    policy, enabled, source = await service.policy_service.resolve(payload.brand_id, payload.category_id)
+    service.validate_listing_status(supplier, brand, payload.research_status, online_purchase_available=payload.online_purchase_available, availability_status=payload.availability_status, purchase_restriction=payload.purchase_restriction, resolved_policy=policy, resolved_research_enabled=enabled, policy_source=source)
     result = service.calculate(payload.model_dump())
     return success_response(data=PriceCalculationResponse(**result.__dict__), message="Price calculated successfully.")
 
@@ -50,8 +50,8 @@ async def calculate_candidate(payload: ProductResearchCreate, service: ProductRe
 async def create_candidate(payload: ProductResearchCreate, service: ProductResearchService = Depends(get_product_research_service), current_user: User = Depends(get_current_user)):
     supplier = await service.validate_supplier(payload.supplier_id, current_user.id, current_user.role == "admin")
     brand = await service.validate_brand(payload.brand_id)
-    policy, enabled, _ = await service.policy_service.resolve(payload.brand_id, payload.category_id)
-    service.validate_listing_status(supplier, brand, payload.research_status, online_purchase_available=payload.online_purchase_available, availability_status=payload.availability_status, resolved_policy=policy, resolved_research_enabled=enabled)
+    policy, enabled, source = await service.policy_service.resolve(payload.brand_id, payload.category_id)
+    service.validate_listing_status(supplier, brand, payload.research_status, online_purchase_available=payload.online_purchase_available, availability_status=payload.availability_status, purchase_restriction=payload.purchase_restriction, resolved_policy=policy, resolved_research_enabled=enabled, policy_source=source)
     values = service.apply_calculation(_database_values(payload))
     values["owner_user_id"] = current_user.id
     candidate = await service.repository.create(values)
@@ -97,8 +97,8 @@ async def update_candidate(candidate_id: UUID, payload: ProductResearchUpdate, s
     brand = await service.validate_brand(target_brand_id)
     updates = _database_values(payload)
     target_status = updates.get("research_status", candidate.research_status)
-    policy, enabled, _ = await service.policy_service.resolve(target_brand_id, updates.get("category_id", candidate.category_id))
-    service.validate_listing_status(supplier, brand, target_status, online_purchase_available=updates.get("online_purchase_available", candidate.online_purchase_available), availability_status=updates.get("availability_status", candidate.availability_status), resolved_policy=policy, resolved_research_enabled=enabled)
+    policy, enabled, source = await service.policy_service.resolve(target_brand_id, updates.get("category_id", candidate.category_id))
+    service.validate_listing_status(supplier, brand, target_status, online_purchase_available=updates.get("online_purchase_available", candidate.online_purchase_available), availability_status=updates.get("availability_status", candidate.availability_status), purchase_restriction=updates.get("purchase_restriction", candidate.purchase_restriction), resolved_policy=policy, resolved_research_enabled=enabled, policy_source=source)
     merged = {field: updates.get(field, getattr(candidate, field)) for field in service.CALCULATION_FIELDS}
     updates.update({key: value for key, value in service.apply_calculation(merged).items() if key not in service.CALCULATION_FIELDS})
     candidate = await service.repository.update(candidate, updates)

@@ -77,6 +77,10 @@ export function ProductResearchDetailPage() {
           <Row k="Supplier" v={s?.name} />
           <Row k="Availability" v={label(c.availability_status)} />
           <Row
+            k="Purchase restriction"
+            v={<Badge tone={c.purchase_restriction === "normal" ? "success" : "neutral"}>{label(c.purchase_restriction || "unknown")}</Badge>}
+          />
+          <Row
             k="Product URL"
             v={
               <a

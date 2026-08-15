@@ -156,6 +156,9 @@ test("admin manages an EU luxury research candidate end to end", async ({ page }
       .getByRole("spinbutton", { name: "BUYMA fee rate", exact: true })
       .fill("0.077");
     await candidateForm.getByLabel("Availability").selectOption("in_stock");
+    await candidateForm
+      .getByRole("combobox", { name: "Purchase restriction", exact: true })
+      .selectOption("normal");
     const [calculateResponse] = await Promise.all([
       page.waitForResponse(
         response =>
@@ -187,6 +190,19 @@ test("admin manages an EU luxury research candidate end to end", async ({ page }
     const editForm = page.getByRole("heading", { name: "Edit Research Candidate" }).locator("xpath=ancestor::form");
     await editForm.getByLabel("Research status").selectOption("ready_for_listing");
     await editForm.getByRole("button", { name: "Save Changes" }).click();
+    await expect(page.getByText("Ready For Listing", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Edit Candidate" }).click();
+    const restrictedForm = page.getByRole("heading", { name: "Edit Research Candidate" }).locator("xpath=ancestor::form");
+    await restrictedForm
+      .getByRole("combobox", { name: "Purchase restriction", exact: true })
+      .selectOption("client_advisor_only");
+    await restrictedForm.getByRole("button", { name: "Save Changes" }).click();
+    await expect(restrictedForm.getByText("This product requires purchase through a client advisor and cannot be marked ready for listing.")).toBeVisible();
+    await restrictedForm
+      .getByRole("combobox", { name: "Purchase restriction", exact: true })
+      .selectOption("normal");
+    await restrictedForm.getByRole("button", { name: "Save Changes" }).click();
     await expect(page.getByText("Ready For Listing", { exact: true })).toBeVisible();
 
     await updateSupplierStatus(api, token, ids.supplierId!, "prohibited");

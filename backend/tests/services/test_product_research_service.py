@@ -31,7 +31,7 @@ def test_prohibited_supplier_cannot_be_ready_for_listing():
     supplier = SimpleNamespace(buyma_allowed_status="prohibited", ships_to_japan=True)
     brand = SimpleNamespace(is_research_enabled=True, online_purchase_policy="normal")
     with pytest.raises(AppException) as error:
-        ProductResearchService.validate_listing_status(supplier, brand, "ready_for_listing")
+        ProductResearchService.validate_listing_status(supplier, brand, "ready_for_listing", purchase_restriction="normal")
     assert error.value.code == "SUPPLIER_PROHIBITED"
 
 
@@ -39,7 +39,7 @@ def test_supplier_not_shipping_to_japan_cannot_be_ready_for_listing():
     supplier = SimpleNamespace(buyma_allowed_status="allowed", ships_to_japan=False)
     brand = SimpleNamespace(is_research_enabled=True, online_purchase_policy="normal")
     with pytest.raises(AppException) as error:
-        ProductResearchService.validate_listing_status(supplier, brand, "ready_for_listing")
+        ProductResearchService.validate_listing_status(supplier, brand, "ready_for_listing", purchase_restriction="normal")
     assert error.value.code == "SUPPLIER_DOES_NOT_SHIP_TO_JAPAN"
 
 
@@ -70,8 +70,52 @@ async def test_supplier_idor_returns_not_found():
 def test_extended_ready_for_listing_rules(brand, kwargs, code):
     supplier = SimpleNamespace(buyma_allowed_status="allowed", ships_to_japan=True)
     with pytest.raises(AppException) as error:
-        ProductResearchService.validate_listing_status(supplier, brand, "ready_for_listing", **kwargs)
+        ProductResearchService.validate_listing_status(supplier, brand, "ready_for_listing", purchase_restriction="normal", **kwargs)
     assert error.value.code == code
+
+
+@pytest.mark.parametrize(
+    "restriction",
+    ["pre_order", "personalized", "made_to_order", "client_advisor_only", "boutique_only", "research_only", "unknown", None],
+)
+def test_product_purchase_restrictions_fail_closed(restriction):
+    supplier = SimpleNamespace(buyma_allowed_status="allowed", ships_to_japan=True)
+    brand = SimpleNamespace(is_research_enabled=True, online_purchase_policy="normal")
+    with pytest.raises(AppException) as error:
+        ProductResearchService.validate_listing_status(
+            supplier, brand, "ready_for_listing", purchase_restriction=restriction
+        )
+    assert error.value.code == "PRODUCT_PURCHASE_RESTRICTED"
+
+
+def test_normal_product_restriction_allows_ready_for_listing():
+    supplier = SimpleNamespace(buyma_allowed_status="allowed", ships_to_japan=True)
+    brand = SimpleNamespace(is_research_enabled=True, online_purchase_policy="normal")
+    ProductResearchService.validate_listing_status(
+        supplier, brand, "ready_for_listing", purchase_restriction="normal"
+    )
+
+
+def test_out_of_stock_remains_distinct_from_purchase_restriction():
+    supplier = SimpleNamespace(buyma_allowed_status="allowed", ships_to_japan=True)
+    brand = SimpleNamespace(is_research_enabled=True, online_purchase_policy="normal")
+    with pytest.raises(AppException) as error:
+        ProductResearchService.validate_listing_status(
+            supplier, brand, "ready_for_listing", availability_status="out_of_stock",
+            purchase_restriction="unknown",
+        )
+    assert error.value.code == "PRODUCT_OUT_OF_STOCK"
+
+
+def test_category_restriction_is_not_overridden_by_normal_product():
+    supplier = SimpleNamespace(buyma_allowed_status="allowed", ships_to_japan=True)
+    brand = SimpleNamespace(is_research_enabled=True, online_purchase_policy="normal")
+    with pytest.raises(AppException) as error:
+        ProductResearchService.validate_listing_status(
+            supplier, brand, "ready_for_listing", purchase_restriction="normal",
+            resolved_policy="boutique_only", policy_source="category_override",
+        )
+    assert error.value.code == "CATEGORY_PURCHASE_RESTRICTED"
 
 
 def _return(value):

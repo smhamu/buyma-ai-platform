@@ -71,7 +71,7 @@ class ProductResearchService:
         return values
 
     @staticmethod
-    def validate_listing_status(supplier, brand, research_status: str, *, online_purchase_available: bool = True, availability_status: str = "unknown", resolved_policy: str | None = None, resolved_research_enabled: bool | None = None) -> None:
+    def validate_listing_status(supplier, brand, research_status: str, *, online_purchase_available: bool = True, availability_status: str = "unknown", purchase_restriction: str | None = "unknown", resolved_policy: str | None = None, resolved_research_enabled: bool | None = None, policy_source: str | None = None) -> None:
         if research_status != "ready_for_listing":
             return
         if supplier.buyma_allowed_status == "prohibited":
@@ -82,9 +82,24 @@ class ProductResearchService:
             raise AppException(409, "BRAND_RESEARCH_DISABLED", "Research is disabled for this brand.")
         policy = resolved_policy or brand.online_purchase_policy
         if policy in {"research_only", "boutique_only"}:
-            code = "CATEGORY_PURCHASE_RESTRICTED" if resolved_policy is not None else "BRAND_RESEARCH_ONLY"
+            is_category = policy_source == "category_override" or (
+                policy_source is None and resolved_policy is not None
+            )
+            code = "CATEGORY_PURCHASE_RESTRICTED" if is_category else "BRAND_RESEARCH_ONLY"
             raise AppException(409, code, "This brand/category purchase policy does not allow Ready for Listing.")
         if not online_purchase_available:
             raise AppException(409, "ONLINE_PURCHASE_UNAVAILABLE", "Online purchase is unavailable.")
         if availability_status == "out_of_stock":
             raise AppException(409, "PRODUCT_OUT_OF_STOCK", "The product is out of stock.")
+        if purchase_restriction != "normal":
+            restriction = purchase_restriction or "unknown"
+            messages = {
+                "pre_order": "Pre-order products require review and cannot be marked ready for listing.",
+                "personalized": "Personalized products cannot be marked ready for listing.",
+                "made_to_order": "Made-to-order products cannot be marked ready for listing.",
+                "client_advisor_only": "This product requires purchase through a client advisor and cannot be marked ready for listing.",
+                "boutique_only": "This product is boutique-only and cannot be marked ready for listing.",
+                "research_only": "This product is restricted to research and cannot be marked ready for listing.",
+                "unknown": "The product purchase restriction must be verified before it can be marked ready for listing.",
+            }
+            raise AppException(409, "PRODUCT_PURCHASE_RESTRICTED", messages.get(restriction, messages["unknown"]))
