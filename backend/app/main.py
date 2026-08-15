@@ -27,6 +27,7 @@ from app.api.v1.product_research import router as product_research_router
 from app.api.v1.brands import router as brands_router
 from app.api.v1.research_ingestion import router as research_ingestion_router
 from app.api.v1.product_categories import router as product_categories_router
+from app.api.v1.supplier_policy_review import router as supplier_policy_review_router
 
 
 setup_logging()
@@ -103,6 +104,7 @@ app.include_router(product_research_router)
 app.include_router(brands_router)
 app.include_router(research_ingestion_router)
 app.include_router(product_categories_router)
+app.include_router(supplier_policy_review_router)
 app.include_router(knowledge_bases_router)
 app.include_router(document_ingestion_router)
 app.include_router(document_versions_router)

@@ -83,6 +83,13 @@ export function SuppliersPage() {
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(() => {
+    const evidenceId = sp.get("evidence");
+    const focusId = sp.get("focus");
+    const supplier = data?.items.find((item) => item.id === (evidenceId || focusId));
+    if (supplier && evidenceId) setEvidenceSupplier(supplier);
+    if (supplier && focusId) setEditing(supplier);
+  }, [data, sp]);
   const change = (k: string, v: string) => {
     const n = new URLSearchParams(sp);
     v ? n.set(k, v) : n.delete(k);
