@@ -1,3 +1,4 @@
+from decimal import Decimal
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -6,6 +7,24 @@ import pytest
 from app.common.exceptions import AppException, NotFoundException
 from app.services.product_research_service import ProductResearchService
 from app.services.supplier_service import SupplierService
+
+
+def test_calculate_keeps_vat_policy_as_text():
+    result = ProductResearchService.calculate(
+        {
+            "supplier_price": Decimal("1200"),
+            "vat_policy": "excluded_for_export",
+            "vat_rate": Decimal("0.20"),
+            "exchange_rate": Decimal("165"),
+            "japan_shipping_cost": Decimal("5000"),
+            "estimated_import_cost": Decimal("10000"),
+            "estimated_other_cost": Decimal("3000"),
+            "buyma_price": Decimal("300000"),
+            "buyma_fee_rate": Decimal("0.077"),
+        }
+    )
+
+    assert result.export_price == Decimal("1000.00")
 
 
 def test_prohibited_supplier_cannot_be_ready_for_listing():

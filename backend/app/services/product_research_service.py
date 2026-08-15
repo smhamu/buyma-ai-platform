@@ -47,9 +47,13 @@ class ProductResearchService:
 
     @staticmethod
     def calculate(values: dict):
+        decimal_fields = set(ProductResearchService.CALCULATION_FIELDS) - {"vat_policy"}
         return PriceCalculationService.calculate(
-            **{field: Decimal(str(values[field])) if values[field] is not None else None
-               for field in ProductResearchService.CALCULATION_FIELDS}
+            vat_policy=values["vat_policy"],
+            **{
+                field: Decimal(str(values[field])) if values[field] is not None else None
+                for field in decimal_fields
+            },
         )
 
     @staticmethod

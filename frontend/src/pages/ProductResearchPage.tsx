@@ -1,15 +1,301 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { CandidateForm } from "../components/research/CandidateForm";
 import { Badge } from "../components/ui/Badge";
 import { Pagination } from "../components/ui/Pagination";
 import { fetchBrands } from "../modules/brands/api";
 import type { Brand } from "../modules/brands/types";
-import { deleteCandidate, fetchCandidates } from "../modules/product-research/api";
+import {
+  deleteCandidate,
+  fetchCandidates,
+} from "../modules/product-research/api";
 import { label, money, percent } from "../modules/product-research/format";
 import type { CandidatePage } from "../modules/product-research/types";
 import { fetchSuppliers } from "../modules/suppliers/api";
 import type { Supplier } from "../modules/suppliers/types";
 
-export function ProductResearchPage(){const[sp,setSp]=useSearchParams();const[data,setData]=useState<CandidatePage|null>(null);const[brands,setBrands]=useState<Brand[]>([]);const[suppliers,setSuppliers]=useState<Supplier[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState("");const[open,setOpen]=useState(false);const query=useMemo(()=>({q:sp.get("q")||undefined,brand_id:sp.get("brand_id")||undefined,supplier_id:sp.get("supplier_id")||undefined,country:sp.get("country")||undefined,currency:sp.get("currency")||undefined,research_status:sp.get("status")||undefined,availability_status:sp.get("availability")||undefined,buyma_allowed_status:sp.get("buyma")||undefined,min_profit_amount:sp.get("min_profit")||undefined,min_profit_rate:sp.get("min_rate")||undefined,ships_to_japan:sp.has("ships")?sp.get("ships")==="true":undefined,page:Number(sp.get("page")||1),page_size:Number(sp.get("page_size")||20),sort_by:(sp.get("sort")||"profit_amount") as "profit_amount",sort_order:"desc" as const}),[sp]);const load=async()=>{setLoading(true);try{const[c,b,s]=await Promise.all([fetchCandidates(query),fetchBrands({page_size:100,is_active:undefined}),fetchSuppliers({page_size:100,is_active:undefined})]);setData(c);setBrands(b.items);setSuppliers(s.items);setError("");}catch(e){setError(e instanceof Error?e.message:"Failed to load research candidates.");}finally{setLoading(false);}};useEffect(()=>{void load();},[query]);const change=(k:string,v:string)=>{const n=new URLSearchParams(sp);v?n.set(k,v):n.delete(k);if(k!=="page")n.set("page","1");setSp(n);};const brandName=(id:string)=>brands.find(x=>x.id===id)?.brand_name||"Unknown brand";const supplier=(id:string)=>suppliers.find(x=>x.id===id);const remove=async(id:string)=>{if(!window.confirm("Delete this research candidate?"))return;await deleteCandidate(id);await load();};
-return <section className="page-section"><div className="page-section__header"><div><h1>Research Candidates</h1><p>Rank EU luxury products by estimated BUYMA profit.</p></div><button className="primary-button" onClick={()=>setOpen(true)}>Add Candidate</button></div><div className="panel research-toolbar research-toolbar--wide"><input aria-label="Search candidates" className="form-field__input" placeholder="Search product or code" value={sp.get("q")||""} onChange={e=>change("q",e.target.value)}/><select aria-label="Brand" className="form-field__input" value={sp.get("brand_id")||""} onChange={e=>change("brand_id",e.target.value)}><option value="">All brands</option>{brands.map(x=><option key={x.id} value={x.id}>{x.brand_name}</option>)}</select><select aria-label="Supplier" className="form-field__input" value={sp.get("supplier_id")||""} onChange={e=>change("supplier_id",e.target.value)}><option value="">All suppliers</option>{suppliers.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select><select aria-label="Country" className="form-field__input" value={sp.get("country")||""} onChange={e=>change("country",e.target.value)}><option value="">All countries</option>{["FR","IT","DE","ES","NL","BE","AT","IE","PT"].map(x=><option key={x}>{x}</option>)}</select><select aria-label="Research status" className="form-field__input" value={sp.get("status")||""} onChange={e=>change("status",e.target.value)}><option value="">All statuses</option>{["discovered","reviewing","profitable","unprofitable","rejected","ready_for_listing"].map(x=><option key={x}>{label(x)}</option>)}</select><select aria-label="Sort candidates" className="form-field__input" value={query.sort_by} onChange={e=>change("sort",e.target.value)}><option value="profit_amount">Profit Amount</option><option value="profit_rate">Profit Rate</option><option value="checked_at">Checked At</option><option value="created_at">Created At</option></select><input aria-label="Minimum profit amount" className="form-field__input" type="number" placeholder="Min profit JPY" value={sp.get("min_profit")||""} onChange={e=>change("min_profit",e.target.value)}/><input aria-label="Minimum profit rate" className="form-field__input" type="number" step="0.01" placeholder="Min rate e.g. 0.15" value={sp.get("min_rate")||""} onChange={e=>change("min_rate",e.target.value)}/></div>{error&&<div className="form-error-banner">{error}</div>}{loading?<div className="page-status">Loading research candidates...</div>:!data?.items.length?<div className="panel panel--empty"><h2>No research candidates found.</h2><p>{sp.toString()?"No candidates match the current filters.":"Add a product to begin profitability research."}</p></div>:<div className="panel"><div className="table-wrapper research-table-desktop"><table className="data-table"><thead><tr><th>Brand / Product</th><th>Supplier</th><th>Supplier Price</th><th>BUYMA Price</th><th>Profit</th><th>Status</th><th>Actions</th></tr></thead><tbody>{data.items.map(c=>{const s=supplier(c.supplier_id);const positive=Number(c.profit_amount)>=0;return <tr key={c.id}><td><strong>{brandName(c.brand_id)}</strong><div>{c.product_name}</div></td><td>{s?.name||"Unknown"}<div className="subtle">{s?.country_code}</div></td><td>{money(c.supplier_price,c.supplier_currency)}</td><td>{money(c.buyma_price)}</td><td><div className={`profit-value ${positive?"profit-value--positive":"profit-value--negative"}`}>{positive?"+":""}{money(c.profit_amount)}</div><div>{percent(c.profit_rate)}</div></td><td><Badge>{label(c.research_status)}</Badge><div className="subtle">{label(c.availability_status)}</div></td><td><div className="row-actions"><Link className="secondary-button secondary-button--link" to={`/product-research/${c.id}`}>Detail</Link><button className="secondary-button" onClick={()=>void remove(c.id)}>Delete</button></div></td></tr>})}</tbody></table></div><div className="research-card-list">{data.items.map(c=><article className="document-card" key={c.id}><h2>{brandName(c.brand_id)} · {c.product_name}</h2><p>{supplier(c.supplier_id)?.name}</p><div className="profit-value">{Number(c.profit_amount)>=0?"+":""}{money(c.profit_amount)} · {percent(c.profit_rate)}</div><Badge>{label(c.research_status)}</Badge><Link className="secondary-button secondary-button--link" to={`/product-research/${c.id}`}>Detail</Link></article>)}</div><Pagination page={data} onPage={p=>change("page",String(p))} onPageSize={s=>change("page_size",String(s))}/></div>}{open&&<CandidateForm onClose={()=>setOpen(false)} onSaved={()=>void load()}/>}</section>}
+export function ProductResearchPage() {
+  const [sp, setSp] = useSearchParams();
+  const [data, setData] = useState<CandidatePage | null>(null);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [open, setOpen] = useState(false);
+  const query = useMemo(
+    () => ({
+      q: sp.get("q") || undefined,
+      brand_id: sp.get("brand_id") || undefined,
+      supplier_id: sp.get("supplier_id") || undefined,
+      country: sp.get("country") || undefined,
+      currency: sp.get("currency") || undefined,
+      research_status: sp.get("status") || undefined,
+      availability_status: sp.get("availability") || undefined,
+      buyma_allowed_status: sp.get("buyma") || undefined,
+      min_profit_amount: sp.get("min_profit") || undefined,
+      min_profit_rate: sp.get("min_rate") || undefined,
+      ships_to_japan: sp.has("ships") ? sp.get("ships") === "true" : undefined,
+      page: Number(sp.get("page") || 1),
+      page_size: Number(sp.get("page_size") || 20),
+      sort_by: (sp.get("sort") || "profit_amount") as "profit_amount",
+      sort_order: "desc" as const,
+    }),
+    [sp],
+  );
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [c, b, s] = await Promise.all([
+        fetchCandidates(query),
+        fetchBrands({ page_size: 100, is_active: undefined }),
+        fetchSuppliers({ page_size: 100, is_active: undefined }),
+      ]);
+      setData(c);
+      setBrands(b.items);
+      setSuppliers(s.items);
+      setError("");
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Failed to load research candidates.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [query]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+  const change = (k: string, v: string) => {
+    const n = new URLSearchParams(sp);
+    v ? n.set(k, v) : n.delete(k);
+    if (k !== "page") n.set("page", "1");
+    setSp(n);
+  };
+  const brandName = (id: string) =>
+    brands.find((x) => x.id === id)?.brand_name || "Unknown brand";
+  const supplier = (id: string) => suppliers.find((x) => x.id === id);
+  const remove = async (id: string) => {
+    if (!window.confirm("Delete this research candidate?")) return;
+    await deleteCandidate(id);
+    await load();
+  };
+  return (
+    <section className="page-section">
+      <div className="page-section__header">
+        <div>
+          <h1>Research Candidates</h1>
+          <p>Rank EU luxury products by estimated BUYMA profit.</p>
+        </div>
+        <button className="primary-button" onClick={() => setOpen(true)}>
+          Add Candidate
+        </button>
+      </div>
+      <div className="panel research-toolbar research-toolbar--wide">
+        <input
+          aria-label="Search candidates"
+          className="form-field__input"
+          placeholder="Search product or code"
+          value={sp.get("q") || ""}
+          onChange={(e) => change("q", e.target.value)}
+        />
+        <select
+          aria-label="Brand"
+          className="form-field__input"
+          value={sp.get("brand_id") || ""}
+          onChange={(e) => change("brand_id", e.target.value)}
+        >
+          <option value="">All brands</option>
+          {brands.map((x) => (
+            <option key={x.id} value={x.id}>
+              {x.brand_name}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Supplier"
+          className="form-field__input"
+          value={sp.get("supplier_id") || ""}
+          onChange={(e) => change("supplier_id", e.target.value)}
+        >
+          <option value="">All suppliers</option>
+          {suppliers.map((x) => (
+            <option key={x.id} value={x.id}>
+              {x.name}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Country"
+          className="form-field__input"
+          value={sp.get("country") || ""}
+          onChange={(e) => change("country", e.target.value)}
+        >
+          <option value="">All countries</option>
+          {["FR", "IT", "DE", "ES", "NL", "BE", "AT", "IE", "PT"].map((x) => (
+            <option key={x}>{x}</option>
+          ))}
+        </select>
+        <select
+          aria-label="Research status"
+          className="form-field__input"
+          value={sp.get("status") || ""}
+          onChange={(e) => change("status", e.target.value)}
+        >
+          <option value="">All statuses</option>
+          {[
+            "discovered",
+            "reviewing",
+            "profitable",
+            "unprofitable",
+            "rejected",
+            "ready_for_listing",
+          ].map((x) => (
+            <option key={x}>{label(x)}</option>
+          ))}
+        </select>
+        <select
+          aria-label="Sort candidates"
+          className="form-field__input"
+          value={query.sort_by}
+          onChange={(e) => change("sort", e.target.value)}
+        >
+          <option value="profit_amount">Profit Amount</option>
+          <option value="profit_rate">Profit Rate</option>
+          <option value="checked_at">Checked At</option>
+          <option value="created_at">Created At</option>
+        </select>
+        <input
+          aria-label="Minimum profit amount"
+          className="form-field__input"
+          type="number"
+          placeholder="Min profit JPY"
+          value={sp.get("min_profit") || ""}
+          onChange={(e) => change("min_profit", e.target.value)}
+        />
+        <input
+          aria-label="Minimum profit rate"
+          className="form-field__input"
+          type="number"
+          step="0.01"
+          placeholder="Min rate e.g. 0.15"
+          value={sp.get("min_rate") || ""}
+          onChange={(e) => change("min_rate", e.target.value)}
+        />
+      </div>
+      {error && <div className="form-error-banner">{error}</div>}
+      {loading ? (
+        <div className="page-status">Loading research candidates...</div>
+      ) : !data?.items.length ? (
+        <div className="panel panel--empty">
+          <h2>No research candidates found.</h2>
+          <p>
+            {sp.toString()
+              ? "No candidates match the current filters."
+              : "Add a product to begin profitability research."}
+          </p>
+        </div>
+      ) : (
+        <div className="panel">
+          <div className="table-wrapper research-table-desktop">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Brand / Product</th>
+                  <th>Supplier</th>
+                  <th>Supplier Price</th>
+                  <th>BUYMA Price</th>
+                  <th>Profit</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.items.map((c) => {
+                  const s = supplier(c.supplier_id);
+                  const positive = Number(c.profit_amount) >= 0;
+                  return (
+                    <tr key={c.id}>
+                      <td>
+                        <strong>{brandName(c.brand_id)}</strong>
+                        <div>{c.product_name}</div>
+                      </td>
+                      <td>
+                        {s?.name || "Unknown"}
+                        <div className="subtle">{s?.country_code}</div>
+                      </td>
+                      <td>{money(c.supplier_price, c.supplier_currency)}</td>
+                      <td>{money(c.buyma_price)}</td>
+                      <td>
+                        <div
+                          className={`profit-value ${positive ? "profit-value--positive" : "profit-value--negative"}`}
+                        >
+                          {positive ? "+" : ""}
+                          {money(c.profit_amount)}
+                        </div>
+                        <div>{percent(c.profit_rate)}</div>
+                      </td>
+                      <td>
+                        <Badge>{label(c.research_status)}</Badge>
+                        <div className="subtle">
+                          {label(c.availability_status)}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="row-actions">
+                          <Link
+                            className="secondary-button secondary-button--link"
+                            to={`/product-research/${c.id}`}
+                          >
+                            Detail
+                          </Link>
+                          <button
+                            className="secondary-button"
+                            onClick={() => void remove(c.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="research-card-list">
+            {data.items.map((c) => (
+              <article className="document-card" key={c.id}>
+                <h2>
+                  {brandName(c.brand_id)} · {c.product_name}
+                </h2>
+                <p>{supplier(c.supplier_id)?.name}</p>
+                <div className="profit-value">
+                  {Number(c.profit_amount) >= 0 ? "+" : ""}
+                  {money(c.profit_amount)} · {percent(c.profit_rate)}
+                </div>
+                <Badge>{label(c.research_status)}</Badge>
+                <Link
+                  className="secondary-button secondary-button--link"
+                  to={`/product-research/${c.id}`}
+                >
+                  Detail
+                </Link>
+              </article>
+            ))}
+          </div>
+          <Pagination
+            page={data}
+            onPage={(p) => change("page", String(p))}
+            onPageSize={(s) => change("page_size", String(s))}
+          />
+        </div>
+      )}
+      {open && (
+        <CandidateForm
+          onClose={() => setOpen(false)}
+          onSaved={() => void load()}
+        />
+      )}
+    </section>
+  );
+}

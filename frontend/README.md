@@ -78,6 +78,15 @@ Then run:
 npm run test:e2e
 ```
 
+Run only the luxury research flow (admin credentials are required):
+
+```bash
+npx playwright test e2e/luxury-research.spec.ts
+```
+
+The spec creates uniquely named Brand, Supplier, and Candidate records and
+removes them in Candidate → Supplier → Brand order even when the test fails.
+
 ### Docker run with Playwright official image
 
 If Node is not installed locally, you can run Playwright from Docker:
