@@ -114,4 +114,7 @@ export const apiClient = {
       method: "POST",
       body,
     }),
+  put: <T, B>(path: string, body: B) =>
+    request<T>(path, { method: "PUT", body: JSON.stringify(body) }),
+  delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };

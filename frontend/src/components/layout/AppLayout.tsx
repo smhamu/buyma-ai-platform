@@ -22,15 +22,10 @@ export function AppLayout() {
           >
             Knowledge Bases
           </NavLink>
-          <button className="sidebar__link sidebar__link--disabled" disabled>
-            Documents (Coming soon)
-          </button>
-          <button className="sidebar__link sidebar__link--disabled" disabled>
-            RAG (Coming soon)
-          </button>
-          <button className="sidebar__link sidebar__link--disabled" disabled>
-            Settings (Coming soon)
-          </button>
+          <div className="sidebar__section">Luxury Research</div>
+          <NavLink to="/product-research" className={({isActive})=>`sidebar__link ${isActive?"sidebar__link--active":""}`}>Research Candidates</NavLink>
+          <NavLink to="/suppliers" className={({isActive})=>`sidebar__link ${isActive?"sidebar__link--active":""}`}>Suppliers</NavLink>
+          <NavLink to="/brands" className={({isActive})=>`sidebar__link ${isActive?"sidebar__link--active":""}`}>Brands</NavLink>
         </nav>
       </aside>
 

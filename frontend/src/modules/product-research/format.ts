@@ -1,0 +1,3 @@
+export function money(value:string|null|undefined,currency="JPY") { if(value==null)return "-"; const number=Number(value); return Number.isFinite(number)?new Intl.NumberFormat(currency==="JPY"?"ja-JP":"en-IE",{style:"currency",currency,maximumFractionDigits:currency==="JPY"?0:2}).format(number):value; }
+export function percent(value:string|null|undefined) { if(value==null)return "-"; const number=Number(value); return Number.isFinite(number)?new Intl.NumberFormat("en",{style:"percent",minimumFractionDigits:2,maximumFractionDigits:2}).format(number):value; }
+export const label=(value:string)=>value.split("_").map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(" ");

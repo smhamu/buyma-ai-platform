@@ -9,6 +9,10 @@ import { KnowledgeBaseDocumentsPage } from "./pages/KnowledgeBaseDocumentsPage";
 import { KnowledgeBaseListPage } from "./pages/KnowledgeBaseListPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { BrandsPage } from "./pages/BrandsPage";
+import { SuppliersPage } from "./pages/SuppliersPage";
+import { ProductResearchPage } from "./pages/ProductResearchPage";
+import { ProductResearchDetailPage } from "./pages/ProductResearchDetailPage";
 
 export function App() {
   return (
@@ -32,6 +36,10 @@ export function App() {
       >
         <Route index element={<Navigate to="/knowledge-bases" replace />} />
         <Route path="knowledge-bases" element={<KnowledgeBaseListPage />} />
+        <Route path="brands" element={<BrandsPage />} />
+        <Route path="suppliers" element={<SuppliersPage />} />
+        <Route path="product-research" element={<ProductResearchPage />} />
+        <Route path="product-research/:id" element={<ProductResearchDetailPage />} />
         <Route
           path="knowledge-bases/:knowledgeBaseId"
           element={<KnowledgeBaseDetailPage />}

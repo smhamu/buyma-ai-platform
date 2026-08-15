@@ -5,7 +5,7 @@ export function Badge({
   tone = "neutral",
 }: {
   children: ReactNode;
-  tone?: "neutral" | "success" | "muted";
+  tone?: "neutral" | "success" | "muted" | "warning" | "danger";
 }) {
   return <span className={`badge badge--${tone}`}>{children}</span>;
 }

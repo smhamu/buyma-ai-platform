@@ -92,6 +92,7 @@ select:focus-visible {
   opacity: 0.45;
   cursor: not-allowed;
 }
+.sidebar__section { margin-top: 14px; padding: 0 12px; color: #9ca3af; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 
 .app-main {
   display: flex;
@@ -227,6 +228,24 @@ select:focus-visible {
   background: #f3f4f6;
   color: #6b7280;
 }
+.badge--warning { background:#fef3c7; color:#92400e; }
+.badge--danger { background:#fee2e2; color:#991b1b; }
+.subtle { color:#6b7280; font-size:12px; margin-top:4px; }
+.chip-list { display:flex; gap:6px; flex-wrap:wrap; }
+.research-toolbar { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
+.research-toolbar--wide { grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
+.pagination-size { width:auto; min-width:80px; padding:8px; }
+.research-form,.candidate-form { max-height:90vh; overflow-y:auto; }
+.candidate-form { max-width:900px; }
+.form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.brand-picker { border:1px solid #d1d5db; border-radius:10px; padding:12px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.vat-notice { margin:14px 0; padding:12px; border-radius:10px; background:#fffbeb; color:#92400e; }
+.price-preview { margin-top:18px; border-top:1px solid #e5e7eb; padding-top:16px; }
+.price-preview__value { font-weight:700; font-size:18px; }
+.profit-value { font-weight:800; font-variant-numeric:tabular-nums; }
+.profit-value--positive::before { content:"Profit "; font-size:11px; color:#166534; }
+.profit-value--negative::before { content:"Loss "; font-size:11px; color:#991b1b; }
+.research-card-list { display:none; flex-direction:column; gap:12px; }
 
 .status-grid {
   display: grid;
@@ -667,6 +686,9 @@ select:focus-visible {
   .documents-card-list {
     display: flex;
   }
+  .research-table-desktop { display:none; }
+  .research-card-list { display:flex; }
+  .form-grid,.brand-picker { grid-template-columns:1fr; }
 
   .detail-row {
     grid-template-columns: 1fr;
