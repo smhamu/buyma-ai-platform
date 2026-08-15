@@ -13,6 +13,7 @@ import { BrandsPage } from "./pages/BrandsPage";
 import { SuppliersPage } from "./pages/SuppliersPage";
 import { ProductResearchPage } from "./pages/ProductResearchPage";
 import { ProductResearchDetailPage } from "./pages/ProductResearchDetailPage";
+import { ResearchIngestionPage } from "./pages/ResearchIngestionPage";
 
 export function App() {
   return (
@@ -40,6 +41,7 @@ export function App() {
         <Route path="suppliers" element={<SuppliersPage />} />
         <Route path="product-research" element={<ProductResearchPage />} />
         <Route path="product-research/:id" element={<ProductResearchDetailPage />} />
+        <Route path="research-ingestion" element={<ResearchIngestionPage />} />
         <Route
           path="knowledge-bases/:knowledgeBaseId"
           element={<KnowledgeBaseDetailPage />}

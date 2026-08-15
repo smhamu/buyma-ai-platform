@@ -20,6 +20,9 @@ class BrandRepository(BaseRepository[Brand]):
     async def find_by_code(self, brand_code: str) -> Brand | None:
         return await self.db.scalar(select(Brand).where(Brand.brand_code == brand_code))
 
+    async def find_by_name(self, brand_name: str) -> Brand | None:
+        return await self.db.scalar(select(Brand).where(func.lower(Brand.brand_name) == brand_name.strip().lower()))
+
     async def find_many_by_ids(self, brand_ids: list[UUID]) -> list[Brand]:
         if not brand_ids:
             return []

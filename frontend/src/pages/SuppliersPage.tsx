@@ -35,6 +35,17 @@ const blank: SupplierInput = {
   research_status: "discovered",
   notes: null,
   is_active: true,
+  ingestion_source_type: "manual",
+  automated_fetch_enabled: false,
+  terms_status: "unchecked",
+  robots_status: "unchecked",
+  terms_checked_at: null,
+  robots_checked_at: null,
+  official_api_available: false,
+  research_policy_notes: null,
+  parser_key: null,
+  request_interval_seconds: null,
+  last_fetch_at: null,
 };
 export function SuppliersPage() {
   const [sp, setSp] = useSearchParams();
@@ -435,6 +446,24 @@ function SupplierForm({
               ))}
             </select>
           </label>
+          <label className="form-field">
+            Ingestion source
+            <select className="form-field__input" value={form.ingestion_source_type} onChange={(e)=>field("ingestion_source_type",e.target.value)}>
+              {["manual","url_manual","csv","official_api","structured_data","html_parser","disabled"].map((x)=><option key={x}>{x}</option>)}
+            </select>
+          </label>
+          <label className="form-field">
+            Terms status
+            <select className="form-field__input" value={form.terms_status} onChange={(e)=>field("terms_status",e.target.value)}>
+              {["unchecked","allowed","restricted","prohibited","unknown"].map((x)=><option key={x}>{x}</option>)}
+            </select>
+          </label>
+          <label className="form-field">
+            Robots status
+            <select className="form-field__input" value={form.robots_status} onChange={(e)=>field("robots_status",e.target.value)}>
+              {["unchecked","allowed","restricted","disallowed","unknown"].map((x)=><option key={x}>{x}</option>)}
+            </select>
+          </label>
         </div>
         <fieldset className="brand-picker">
           <legend>Brands</legend>
@@ -459,6 +488,10 @@ function SupplierForm({
             </label>
           ))}
         </fieldset>
+        <label className="checkbox-field">
+          <input type="checkbox" checked={form.automated_fetch_enabled} onChange={(e)=>field("automated_fetch_enabled",e.target.checked)}/>
+          Automated fetch enabled
+        </label>
         <label className="checkbox-field">
           <input
             type="checkbox"

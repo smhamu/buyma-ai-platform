@@ -77,6 +77,7 @@ class ProductResearchResponse(ProductResearchInput):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     owner_user_id: UUID
+    source_product_id: UUID | None = None
     export_price: Decimal | None
     supplier_cost_jpy: Decimal
     total_cost: Decimal

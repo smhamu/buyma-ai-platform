@@ -18,6 +18,12 @@ class SupplierRepository(BaseRepository[Supplier]):
         )
         return result.scalar_one_or_none()
 
+    async def find_by_name(self, name: str, owner_user_id: UUID | None = None) -> Supplier | None:
+        filters = [func.lower(Supplier.name) == name.strip().lower()]
+        if owner_user_id is not None:
+            filters.append(Supplier.owner_user_id == owner_user_id)
+        return await self.db.scalar(select(Supplier).where(*filters))
+
     async def find_all_filtered(
         self, *, owner_user_id: UUID | None, country: str | None, supplier_type: str | None, ships_to_japan: bool | None,
         buyma_allowed_status: str | None, research_status: str | None, is_active: bool | None,

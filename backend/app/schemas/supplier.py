@@ -12,6 +12,9 @@ VatPolicy = Literal["included", "excluded_for_export", "not_refunded", "unknown"
 BuymaAllowedStatus = Literal["unchecked", "allowed", "caution", "prohibited"]
 SupplierResearchStatus = Literal["discovered", "reviewing", "approved", "rejected"]
 SupplierType = Literal["authorized_retailer", "department_store", "boutique", "marketplace", "other", "unknown"]
+IngestionSourceType = Literal["manual", "url_manual", "csv", "official_api", "structured_data", "html_parser", "disabled"]
+TermsStatus = Literal["unchecked", "allowed", "restricted", "prohibited", "unknown"]
+RobotsStatus = Literal["unchecked", "allowed", "restricted", "disallowed", "unknown"]
 
 
 class SupplierBase(BaseModel):
@@ -29,6 +32,17 @@ class SupplierBase(BaseModel):
     research_status: SupplierResearchStatus = "discovered"
     notes: str | None = None
     is_active: bool = True
+    ingestion_source_type: IngestionSourceType = "manual"
+    automated_fetch_enabled: bool = False
+    terms_status: TermsStatus = "unchecked"
+    robots_status: RobotsStatus = "unchecked"
+    terms_checked_at: datetime | None = None
+    robots_checked_at: datetime | None = None
+    official_api_available: bool = False
+    research_policy_notes: str | None = None
+    parser_key: str | None = Field(default=None, max_length=100)
+    request_interval_seconds: int | None = Field(default=None, ge=1)
+    last_fetch_at: datetime | None = None
 
 
 class SupplierCreate(SupplierBase):
@@ -51,6 +65,17 @@ class SupplierUpdate(BaseModel):
     notes: str | None = None
     is_active: bool | None = None
     brand_ids: list[UUID] | None = None
+    ingestion_source_type: IngestionSourceType | None = None
+    automated_fetch_enabled: bool | None = None
+    terms_status: TermsStatus | None = None
+    robots_status: RobotsStatus | None = None
+    terms_checked_at: datetime | None = None
+    robots_checked_at: datetime | None = None
+    official_api_available: bool | None = None
+    research_policy_notes: str | None = None
+    parser_key: str | None = Field(default=None, max_length=100)
+    request_interval_seconds: int | None = Field(default=None, ge=1)
+    last_fetch_at: datetime | None = None
 
 
 class SupplierResponse(SupplierBase):
