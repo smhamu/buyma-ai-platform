@@ -21,6 +21,7 @@ from app.models.product_research_candidate import ProductResearchCandidate
 from app.models.brand import Brand, supplier_brands
 from app.models.research_source_product import ResearchSourceProduct
 from app.models.product_category import ProductCategory, BrandCategoryPolicy
+from app.models.supplier_policy_evidence import SupplierPolicyEvidence
 from app.core.config import settings
 
 # this is the Alembic Config object, which provides

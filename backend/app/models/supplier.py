@@ -46,3 +46,6 @@ class Supplier(Base):
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     brands = relationship("Brand", secondary="supplier_brands", back_populates="suppliers", lazy="selectin")
+    policy_evidence = relationship(
+        "SupplierPolicyEvidence", cascade="all, delete-orphan", passive_deletes=True
+    )

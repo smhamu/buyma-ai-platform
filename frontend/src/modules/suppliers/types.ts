@@ -5,3 +5,11 @@ export type Supplier = { id: string; owner_user_id: string; name: string; countr
 export type SupplierInput = Omit<Supplier, "id" | "owner_user_id" | "brands" | "created_at" | "updated_at"> & { brand_ids: string[] };
 export type SupplierQuery = { country?: string; supplier_type?: string; ships_to_japan?: boolean; buyma_allowed_status?: string; research_status?: string; is_active?: boolean; page?: number; page_size?: number; sort_by?: "name" | "country_code" | "created_at" | "updated_at"; sort_order?: SortOrder };
 export type SupplierPage = Paginated<Supplier>;
+
+export type EvidenceType = "terms" | "robots" | "vat" | "shipping" | "official_api" | "buyma" | "ingestion" | "resale_restriction" | "other";
+export type EvidenceResult = "allowed" | "restricted" | "prohibited" | "disallowed" | "supported" | "unsupported" | "confirmed" | "unconfirmed" | "unknown" | "unchecked" | "caution" | "included" | "excluded_for_export" | "not_refunded" | "manual" | "url_manual" | "csv" | "official_api" | "structured_data" | "html_parser" | "disabled";
+export type SupplierPolicyEvidence = { id:string; supplier_id:string; owner_user_id:string; evidence_type:EvidenceType; result:EvidenceResult; source_url:string|null; source_title:string|null; source_excerpt:string|null; evidence_notes:string; checked_at:string; checked_by_user_id:string; checked_by_username:string; policy_snapshot:Record<string,unknown>; created_at:string; updated_at:string };
+export type SupplierPolicyEvidenceInput = Pick<SupplierPolicyEvidence,"evidence_type"|"result"|"source_url"|"source_title"|"source_excerpt"|"evidence_notes"|"checked_at">;
+export type SupplierPolicyEvidencePage = Paginated<SupplierPolicyEvidence>;
+export type PolicyEvidenceSummaryItem = { current:string|boolean; latest_evidence:string|null; evidence_id:string|null; checked_at:string|null; age_days:number|null; is_stale:boolean|null; consistent:boolean|null };
+export type PolicyEvidenceSummary = Record<"terms"|"robots"|"vat"|"shipping"|"official_api"|"buyma",PolicyEvidenceSummaryItem>;

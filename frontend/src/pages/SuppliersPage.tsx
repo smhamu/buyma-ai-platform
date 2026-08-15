@@ -18,6 +18,7 @@ import type {
   SupplierInput,
   SupplierPage,
 } from "../modules/suppliers/types";
+import { SupplierPolicyEvidencePanel } from "../components/suppliers/SupplierPolicyEvidencePanel";
 
 const blank: SupplierInput = {
   name: "",
@@ -53,6 +54,7 @@ export function SuppliersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<Supplier | null | undefined>();
+  const [evidenceSupplier, setEvidenceSupplier] = useState<Supplier | null>(null);
   const query = useMemo(
     () => ({
       country: sp.get("country") || undefined,
@@ -234,6 +236,12 @@ export function SuppliersPage() {
                         </a>
                         <button
                           className="secondary-button"
+                          onClick={() => setEvidenceSupplier(s)}
+                        >
+                          Policy Evidence
+                        </button>
+                        <button
+                          className="secondary-button"
                           onClick={() => setEditing(s)}
                         >
                           Edit
@@ -268,6 +276,7 @@ export function SuppliersPage() {
           }}
         />
       )}
+      {evidenceSupplier && <SupplierPolicyEvidencePanel supplier={evidenceSupplier} onClose={() => setEvidenceSupplier(null)} />}
     </section>
   );
 }

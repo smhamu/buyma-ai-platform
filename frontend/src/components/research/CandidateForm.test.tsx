@@ -34,7 +34,7 @@ describe("CandidateForm purchase restriction", () => {
     vi.mocked(updateCandidate).mockRejectedValue(new ApiClientError(409,"PRODUCT_PURCHASE_RESTRICTED","This product requires purchase through a client advisor and cannot be marked ready for listing."));
     render(<MemoryRouter><CandidateForm candidate={candidate} onClose={vi.fn()} /></MemoryRouter>);
 
-    const restriction = screen.getByRole("combobox", {name:"Purchase restriction", exact:true});
+    const restriction = screen.getByRole("combobox", {name:"Purchase restriction"});
     expect(restriction).toHaveValue("normal");
     expect(restriction).toContainHTML("client_advisor_only");
     fireEvent.change(restriction, {target:{value:"client_advisor_only"}});
