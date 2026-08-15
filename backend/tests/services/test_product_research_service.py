@@ -10,15 +10,17 @@ from app.services.supplier_service import SupplierService
 
 def test_prohibited_supplier_cannot_be_ready_for_listing():
     supplier = SimpleNamespace(buyma_allowed_status="prohibited", ships_to_japan=True)
+    brand = SimpleNamespace(is_research_enabled=True, online_purchase_policy="normal")
     with pytest.raises(AppException) as error:
-        ProductResearchService.validate_listing_status(supplier, "ready_for_listing")
+        ProductResearchService.validate_listing_status(supplier, brand, "ready_for_listing")
     assert error.value.code == "SUPPLIER_PROHIBITED"
 
 
 def test_supplier_not_shipping_to_japan_cannot_be_ready_for_listing():
     supplier = SimpleNamespace(buyma_allowed_status="allowed", ships_to_japan=False)
+    brand = SimpleNamespace(is_research_enabled=True, online_purchase_policy="normal")
     with pytest.raises(AppException) as error:
-        ProductResearchService.validate_listing_status(supplier, "ready_for_listing")
+        ProductResearchService.validate_listing_status(supplier, brand, "ready_for_listing")
     assert error.value.code == "SUPPLIER_DOES_NOT_SHIP_TO_JAPAN"
 
 
@@ -32,9 +34,25 @@ async def test_candidate_idor_returns_not_found():
 
 @pytest.mark.asyncio
 async def test_supplier_idor_returns_not_found():
-    service = SupplierService(SimpleNamespace(find_by_id_and_owner=_return(None)))
+    service = SupplierService(SimpleNamespace(find_by_id_and_owner=_return(None)), SimpleNamespace())
     with pytest.raises(NotFoundException):
         await service.require_access(uuid4(), uuid4())
+
+
+@pytest.mark.parametrize(
+    ("brand", "kwargs", "code"),
+    [
+        (SimpleNamespace(is_research_enabled=False, online_purchase_policy="normal"), {}, "BRAND_RESEARCH_DISABLED"),
+        (SimpleNamespace(is_research_enabled=True, online_purchase_policy="research_only"), {}, "BRAND_RESEARCH_ONLY"),
+        (SimpleNamespace(is_research_enabled=True, online_purchase_policy="normal"), {"online_purchase_available": False}, "ONLINE_PURCHASE_UNAVAILABLE"),
+        (SimpleNamespace(is_research_enabled=True, online_purchase_policy="normal"), {"availability_status": "out_of_stock"}, "PRODUCT_OUT_OF_STOCK"),
+    ],
+)
+def test_extended_ready_for_listing_rules(brand, kwargs, code):
+    supplier = SimpleNamespace(buyma_allowed_status="allowed", ships_to_japan=True)
+    with pytest.raises(AppException) as error:
+        ProductResearchService.validate_listing_status(supplier, brand, "ready_for_listing", **kwargs)
+    assert error.value.code == code
 
 
 def _return(value):

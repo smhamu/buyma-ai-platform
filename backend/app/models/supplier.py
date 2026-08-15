@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 
@@ -17,6 +17,7 @@ class Supplier(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     country_code: Mapped[str] = mapped_column(String(2), nullable=False, index=True)
     website_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    supplier_type: Mapped[str] = mapped_column(String(32), nullable=False, default="unknown", index=True)
     default_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
     ships_to_japan: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     vat_policy: Mapped[str] = mapped_column(String(32), nullable=False, default="unknown")
@@ -33,3 +34,4 @@ class Supplier(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    brands = relationship("Brand", secondary="supplier_brands", back_populates="suppliers", lazy="selectin")

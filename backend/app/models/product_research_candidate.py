@@ -17,10 +17,12 @@ class ProductResearchCandidate(Base):
     supplier_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    brand_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("brands.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
     supplier_product_url: Mapped[str] = mapped_column(String(2048), nullable=False)
     supplier_product_code: Mapped[str | None] = mapped_column(String(255), nullable=True)
     product_name: Mapped[str] = mapped_column(String(500), nullable=False)
-    brand_name: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     category: Mapped[str | None] = mapped_column(String(255), nullable=True)
     supplier_price: Mapped[float] = mapped_column(Numeric(18, 2), nullable=False)
     supplier_currency: Mapped[str] = mapped_column(String(3), nullable=False, index=True)
@@ -45,6 +47,7 @@ class ProductResearchCandidate(Base):
         String(32), nullable=False, default="discovered", index=True
     )
     checked_at = mapped_column(DateTime(timezone=True), nullable=True)
+    online_purchase_available: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

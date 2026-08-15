@@ -15,10 +15,10 @@ CandidateResearchStatus = Literal[
 
 class ProductResearchInput(BaseModel):
     supplier_id: UUID
+    brand_id: UUID
     supplier_product_url: AnyHttpUrl
     supplier_product_code: str | None = Field(default=None, max_length=255)
     product_name: str = Field(min_length=1, max_length=500)
-    brand_name: str | None = Field(default=None, max_length=255)
     category: str | None = Field(default=None, max_length=255)
     supplier_price: Decimal = Field(gt=0)
     supplier_currency: CurrencyCode
@@ -33,6 +33,7 @@ class ProductResearchInput(BaseModel):
     availability_status: AvailabilityStatus = "unknown"
     research_status: CandidateResearchStatus = "discovered"
     checked_at: datetime | None = None
+    online_purchase_available: bool = True
     is_active: bool = True
 
 
@@ -41,10 +42,10 @@ class ProductResearchCreate(ProductResearchInput):
 
 
 class ProductResearchUpdate(BaseModel):
+    brand_id: UUID | None = None
     supplier_product_url: AnyHttpUrl | None = None
     supplier_product_code: str | None = Field(default=None, max_length=255)
     product_name: str | None = Field(default=None, min_length=1, max_length=500)
-    brand_name: str | None = Field(default=None, max_length=255)
     category: str | None = Field(default=None, max_length=255)
     supplier_price: Decimal | None = Field(default=None, gt=0)
     supplier_currency: CurrencyCode | None = None
