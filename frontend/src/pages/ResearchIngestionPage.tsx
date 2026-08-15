@@ -10,6 +10,8 @@ import { Badge } from "../components/ui/Badge";
 import { Pagination } from "../components/ui/Pagination";
 import { fetchBrands } from "../modules/brands/api";
 import type { Brand } from "../modules/brands/types";
+import { fetchProductCategories } from "../modules/product-categories/api";
+import type { ProductCategory } from "../modules/product-categories/types";
 import {
   createCandidateFromSource,
   deleteResearchSource,
@@ -29,6 +31,7 @@ export function ResearchIngestionPage() {
   const [data, setData] = useState<ResearchSourcePage | null>(null);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [urlOpen, setUrlOpen] = useState(false);
@@ -63,6 +66,9 @@ export function ResearchIngestionPage() {
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(() => {
+    void fetchProductCategories().then(setCategories).catch(() => setCategories([]));
+  }, []);
   const change = (key: string, value: string) => {
     const n = new URLSearchParams(sp);
     value ? n.set(key, value) : n.delete(key);
@@ -250,6 +256,7 @@ export function ResearchIngestionPage() {
       {urlOpen && (
         <UrlForm
           suppliers={suppliers}
+          categories={categories}
           onClose={() => setUrlOpen(false)}
           onSaved={load}
         />
@@ -268,21 +275,26 @@ export function ResearchIngestionPage() {
 
 function UrlForm({
   suppliers,
+  categories,
   onClose,
   onSaved,
 }: {
   suppliers: Supplier[];
+  categories: ProductCategory[];
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
   const [supplier, setSupplier] = useState("");
   const [url, setUrl] = useState("");
+  const [category, setCategory] = useState("");
   const [error, setError] = useState("");
   const selected = suppliers.find((x) => x.id === supplier);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await registerResearchUrl(supplier, url);
+      await (category
+        ? registerResearchUrl(supplier, url, category)
+        : registerResearchUrl(supplier, url));
       await onSaved();
       onClose();
     } catch (x) {
@@ -317,6 +329,13 @@ function UrlForm({
                 {x.name}
               </option>
             ))}
+          </select>
+        </label>
+        <label className="form-field">
+          Category (optional)
+          <select className="form-field__input" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="">Uncategorized</option>
+            {categories.map((x) => <option key={x.id} value={x.id}>{x.category_name}</option>)}
           </select>
         </label>
         {selected && (
@@ -383,7 +402,7 @@ function CsvForm({
         <p>
           Expected columns: supplier, brand, product_url, product_name,
           supplier_product_code, supplier_price, currency, availability,
-          buyma_price (optional)
+          buyma_price, category_code (optional)
         </p>
         {error && <div className="form-error-banner">{error}</div>}
         <input

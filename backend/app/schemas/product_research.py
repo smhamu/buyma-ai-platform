@@ -20,6 +20,7 @@ class ProductResearchInput(BaseModel):
     supplier_product_code: str | None = Field(default=None, max_length=255)
     product_name: str = Field(min_length=1, max_length=500)
     category: str | None = Field(default=None, max_length=255)
+    category_id: UUID | None = None
     supplier_price: Decimal = Field(gt=0)
     supplier_currency: CurrencyCode
     vat_policy: VatPolicy
@@ -47,6 +48,7 @@ class ProductResearchUpdate(BaseModel):
     supplier_product_code: str | None = Field(default=None, max_length=255)
     product_name: str | None = Field(default=None, min_length=1, max_length=500)
     category: str | None = Field(default=None, max_length=255)
+    category_id: UUID | None = None
     supplier_price: Decimal | None = Field(default=None, gt=0)
     supplier_currency: CurrencyCode | None = None
     vat_policy: VatPolicy | None = None

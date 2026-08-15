@@ -17,17 +17,18 @@ from app.schemas.pagination import PaginatedResponse
 from app.schemas.product_research import ProductResearchResponse
 from app.schemas.research_ingestion import CandidateConversionRequest, CsvImportResponse, CsvRowResult, ResearchSourceResponse, UrlIngestionRequest
 from app.services.research_ingestion_service import ResearchIngestionService
+from app.repositories.product_category_repository import ProductCategoryRepository
 
 router = APIRouter(prefix="/research-ingestion", tags=["Research Ingestion"])
 
 
 def get_service(db: AsyncSession = Depends(get_db)):
-    return ResearchIngestionService(ResearchIngestionRepository(db), SupplierRepository(db), BrandRepository(db), ProductResearchRepository(db))
+    return ResearchIngestionService(ResearchIngestionRepository(db), SupplierRepository(db), BrandRepository(db), ProductResearchRepository(db), ProductCategoryRepository(db))
 
 
 @router.post("/url")
 async def register_url(payload: UrlIngestionRequest, service: ResearchIngestionService = Depends(get_service), user: User = Depends(get_current_user)):
-    source = await service.register_url(payload.supplier_id, str(payload.url), user.id, user.role == "admin")
+    source = await service.register_url(payload.supplier_id, str(payload.url), user.id, user.role == "admin", payload.category_id)
     return success_response(data=ResearchSourceResponse.model_validate(source), message="Source URL registered. No external request was made.")
 
 

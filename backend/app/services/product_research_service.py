@@ -14,10 +14,11 @@ class ProductResearchService:
         "estimated_import_cost", "estimated_other_cost", "buyma_price", "buyma_fee_rate",
     )
 
-    def __init__(self, repository: ProductResearchRepository, supplier_repository: SupplierRepository, brand_repository: BrandRepository | None = None):
+    def __init__(self, repository: ProductResearchRepository, supplier_repository: SupplierRepository, brand_repository: BrandRepository | None = None, policy_service=None):
         self.repository = repository
         self.supplier_repository = supplier_repository
         self.brand_repository = brand_repository
+        self.policy_service = policy_service
 
     async def require_access(self, candidate_id: UUID, owner_user_id: UUID, is_admin: bool = False):
         candidate = (
@@ -70,17 +71,19 @@ class ProductResearchService:
         return values
 
     @staticmethod
-    def validate_listing_status(supplier, brand, research_status: str, *, online_purchase_available: bool = True, availability_status: str = "unknown") -> None:
+    def validate_listing_status(supplier, brand, research_status: str, *, online_purchase_available: bool = True, availability_status: str = "unknown", resolved_policy: str | None = None, resolved_research_enabled: bool | None = None) -> None:
         if research_status != "ready_for_listing":
             return
         if supplier.buyma_allowed_status == "prohibited":
             raise AppException(409, "SUPPLIER_PROHIBITED", "The supplier is prohibited for BUYMA purchasing.")
         if not supplier.ships_to_japan:
             raise AppException(409, "SUPPLIER_DOES_NOT_SHIP_TO_JAPAN", "The supplier does not ship to Japan.")
-        if not brand.is_research_enabled:
+        if resolved_research_enabled is False or (resolved_research_enabled is None and not brand.is_research_enabled):
             raise AppException(409, "BRAND_RESEARCH_DISABLED", "Research is disabled for this brand.")
-        if brand.online_purchase_policy == "research_only":
-            raise AppException(409, "BRAND_RESEARCH_ONLY", "This brand is restricted to research only.")
+        policy = resolved_policy or brand.online_purchase_policy
+        if policy in {"research_only", "boutique_only"}:
+            code = "CATEGORY_PURCHASE_RESTRICTED" if resolved_policy is not None else "BRAND_RESEARCH_ONLY"
+            raise AppException(409, code, "This brand/category purchase policy does not allow Ready for Listing.")
         if not online_purchase_available:
             raise AppException(409, "ONLINE_PURCHASE_UNAVAILABLE", "Online purchase is unavailable.")
         if availability_status == "out_of_stock":

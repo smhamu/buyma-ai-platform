@@ -31,3 +31,4 @@ class Brand(Base):
     updated_at = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     suppliers = relationship("Supplier", secondary=supplier_brands, back_populates="brands")
+    category_policies = relationship("BrandCategoryPolicy", cascade="all, delete-orphan", lazy="selectin")

@@ -15,6 +15,7 @@ ProcessingStatus = Literal["pending", "fetched", "normalized", "matched", "candi
 class UrlIngestionRequest(BaseModel):
     supplier_id: UUID
     url: AnyHttpUrl
+    category_id: UUID | None = None
 
 
 class ResearchSourceResponse(BaseModel):
@@ -23,6 +24,7 @@ class ResearchSourceResponse(BaseModel):
     owner_user_id: UUID
     supplier_id: UUID
     brand_id: UUID | None
+    category_id: UUID | None
     source_type: SourceType
     source_url: str
     external_product_id: str | None

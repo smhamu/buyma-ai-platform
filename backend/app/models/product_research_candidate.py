@@ -24,6 +24,9 @@ class ProductResearchCandidate(Base):
     supplier_product_code: Mapped[str | None] = mapped_column(String(255), nullable=True)
     product_name: Mapped[str] = mapped_column(String(500), nullable=False)
     category: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    category_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("product_categories.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     supplier_price: Mapped[float] = mapped_column(Numeric(18, 2), nullable=False)
     supplier_currency: Mapped[str] = mapped_column(String(3), nullable=False, index=True)
     vat_policy: Mapped[str] = mapped_column(String(32), nullable=False)
