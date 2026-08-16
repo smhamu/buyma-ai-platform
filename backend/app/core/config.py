@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     database_max_overflow: int = 20
     registration_enabled: bool = True
     enable_api_docs: bool = True
+    notification_outbox_consumer_enabled: bool = False
+    notification_outbox_adapter: Literal["disabled", "noop"] = "disabled"
+    notification_outbox_batch_size: int = 50
+    notification_outbox_max_attempts: int = 5
+    notification_outbox_base_backoff_seconds: int = 60
+    notification_outbox_max_backoff_seconds: int = 3600
+    notification_outbox_lease_seconds: int = 300
     
     model_config = SettingsConfigDict(
         env_file=get_env_file(),

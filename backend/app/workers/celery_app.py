@@ -11,6 +11,7 @@ celery_app = Celery(
         "app.workers.embedding_tasks",
         "app.workers.embedding_recovery_tasks",
         "app.workers.supplier_policy_review_tasks",
+        "app.workers.notification_outbox_tasks",
     ],
 )
 
@@ -35,5 +36,9 @@ celery_app.conf.beat_schedule = {
     "evaluate-supplier-policy-reviews": {
         "task": "supplier_policy_review.evaluate",
         "schedule": 3600.0,
+    },
+    "consume-notification-outbox": {
+        "task": "notification_outbox.consume",
+        "schedule": 60.0,
     },
 }

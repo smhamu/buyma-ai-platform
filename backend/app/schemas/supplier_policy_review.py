@@ -91,7 +91,19 @@ class NotificationOutboxResponse(BaseModel):
     status: Literal["pending", "processing", "delivered", "failed", "cancelled"]
     available_at: datetime
     processed_at: datetime | None
+    processing_started_at: datetime | None
+    lease_expires_at: datetime | None
     attempt_count: int
     last_error: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class NotificationOutboxStatsResponse(BaseModel):
+    pending_count: int
+    processing_count: int
+    delivered_count: int
+    failed_count: int
+    cancelled_count: int
+    oldest_pending_at: datetime | None
+    oldest_pending_age_seconds: int | None
