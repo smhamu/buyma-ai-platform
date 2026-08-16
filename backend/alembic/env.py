@@ -26,6 +26,8 @@ from app.models.supplier_policy_review_setting import SupplierPolicyReviewSettin
 from app.models.supplier_policy_review_state import SupplierPolicyReviewState
 from app.models.supplier_policy_review_transition import SupplierPolicyReviewTransition
 from app.models.notification_outbox import NotificationOutbox
+from app.models.notification_channel_setting import NotificationChannelSetting
+from app.models.notification_delivery import NotificationDelivery
 from app.core.config import settings
 
 # this is the Alembic Config object, which provides

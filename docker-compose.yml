@@ -53,6 +53,8 @@ services:
     restart: unless-stopped
     env_file:
       - ./.env.development
+    environment:
+      NOTIFICATION_SECRET_STORE: memory
     ports:
       - "8000:8000"
     volumes:
@@ -73,6 +75,8 @@ services:
     restart: unless-stopped
     env_file:
       - ./.env.development
+    environment:
+      NOTIFICATION_SECRET_STORE: memory
     volumes:
       - ./backend:/app
       - ./.env.development:/app/.env.development
@@ -91,6 +95,8 @@ services:
     restart: unless-stopped
     env_file:
       - ./.env.development
+    environment:
+      NOTIFICATION_SECRET_STORE: memory
     volumes:
       - ./backend:/app
       - ./.env.development:/app/.env.development

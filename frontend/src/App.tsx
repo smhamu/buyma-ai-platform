@@ -15,6 +15,7 @@ import { ProductResearchPage } from "./pages/ProductResearchPage";
 import { ProductResearchDetailPage } from "./pages/ProductResearchDetailPage";
 import { ResearchIngestionPage } from "./pages/ResearchIngestionPage";
 import { SupplierPolicyReviewPage } from "./pages/SupplierPolicyReviewPage";
+import { NotificationSettingsPage } from "./pages/NotificationSettingsPage";
 
 export function App() {
   return (
@@ -44,6 +45,7 @@ export function App() {
         <Route path="product-research/:id" element={<ProductResearchDetailPage />} />
         <Route path="research-ingestion" element={<ResearchIngestionPage />} />
         <Route path="supplier-policy-review" element={<SupplierPolicyReviewPage />} />
+        <Route path="notification-settings" element={<NotificationSettingsPage />} />
         <Route
           path="knowledge-bases/:knowledgeBaseId"
           element={<KnowledgeBaseDetailPage />}

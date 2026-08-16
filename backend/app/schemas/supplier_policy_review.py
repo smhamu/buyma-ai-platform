@@ -88,7 +88,7 @@ class NotificationOutboxResponse(BaseModel):
     resource_id: UUID
     payload: dict
     dedupe_key: str
-    status: Literal["pending", "processing", "delivered", "failed", "cancelled"]
+    status: Literal["pending", "processing", "expanded", "delivered", "failed", "cancelled"]
     available_at: datetime
     processed_at: datetime | None
     processing_started_at: datetime | None
@@ -102,6 +102,7 @@ class NotificationOutboxResponse(BaseModel):
 class NotificationOutboxStatsResponse(BaseModel):
     pending_count: int
     processing_count: int
+    expanded_count: int
     delivered_count: int
     failed_count: int
     cancelled_count: int

@@ -12,7 +12,7 @@ class NotificationOutbox(Base):
     __table_args__ = (
         CheckConstraint("event_type = 'supplier_policy_review_changed'", name="ck_notification_outbox_event_type"),
         CheckConstraint("resource_type = 'supplier'", name="ck_notification_outbox_resource_type"),
-        CheckConstraint("status IN ('pending','processing','delivered','failed','cancelled')", name="ck_notification_outbox_status"),
+        CheckConstraint("status IN ('pending','processing','expanded','delivered','failed','cancelled')", name="ck_notification_outbox_status"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

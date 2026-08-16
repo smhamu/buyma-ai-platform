@@ -18,7 +18,7 @@ Internet
 
 Internal Docker services:
   PostgreSQL, Redis, Backend, Celery Worker, Celery Beat
-  Backend/Worker -> internal egress network -> Squid -> api.openai.com:443 and hooks.slack.com:443 only
+  Backend/Worker -> internal egress network -> Squid -> api.openai.com:443, hooks.slack.com:443, and regional AWS SSM HTTPS endpoints only
 ```
 
 Only the frontend port is published on EC2. Backend 8000, PostgreSQL 5432,

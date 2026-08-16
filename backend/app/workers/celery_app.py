@@ -37,8 +37,12 @@ celery_app.conf.beat_schedule = {
         "task": "supplier_policy_review.evaluate",
         "schedule": 3600.0,
     },
-    "consume-notification-outbox": {
-        "task": "notification_outbox.consume",
+    "expand-notification-outbox": {
+        "task": "notification_outbox.expand",
+        "schedule": 60.0,
+    },
+    "consume-notification-deliveries": {
+        "task": "notification_delivery.consume",
         "schedule": 60.0,
     },
 }

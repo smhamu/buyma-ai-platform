@@ -16,6 +16,7 @@ python-multipart
 pgvector
 openai
 httpx
+boto3
 celery[redis]
 pypdf
 pytest

@@ -29,6 +29,8 @@ from app.api.v1.research_ingestion import router as research_ingestion_router
 from app.api.v1.product_categories import router as product_categories_router
 from app.api.v1.supplier_policy_review import router as supplier_policy_review_router
 from app.api.v1.notification_outbox import router as notification_outbox_router
+from app.api.v1.notification_channels import router as notification_channels_router
+from app.api.v1.notification_deliveries import router as notification_deliveries_router
 
 
 setup_logging()
@@ -107,6 +109,8 @@ app.include_router(research_ingestion_router)
 app.include_router(product_categories_router)
 app.include_router(supplier_policy_review_router)
 app.include_router(notification_outbox_router)
+app.include_router(notification_channels_router)
+app.include_router(notification_deliveries_router)
 app.include_router(knowledge_bases_router)
 app.include_router(document_ingestion_router)
 app.include_router(document_versions_router)

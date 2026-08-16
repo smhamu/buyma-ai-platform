@@ -2,45 +2,22 @@ from unittest.mock import patch
 
 import pytest
 
-from app.notifications.slack import SlackNotificationAdapter
-from app.workers.notification_outbox_tasks import build_notification_adapter, consume_notification_outbox_batch
+from app.workers.notification_outbox_tasks import (
+    consume_notification_delivery_batch,
+    expand_notification_outbox_batch,
+)
 
 
 @pytest.mark.asyncio
-async def test_consumer_task_is_safe_when_delivery_is_disabled():
-    with patch("app.workers.notification_outbox_tasks.settings.notification_outbox_consumer_enabled", False):
-        result = await consume_notification_outbox_batch()
-    assert result == {"enabled": False, "claimed": 0, "delivered": 0, "retried": 0, "failed": 0}
+async def test_tasks_are_safe_when_consumer_is_disabled():
+    with patch("app.workers.notification_outbox_tasks.settings.notification_outbox_consumer_enabled",False):
+        expansion=await expand_notification_outbox_batch();delivery=await consume_notification_delivery_batch()
+    assert expansion=={"enabled":False,"kind":"outbox_expansion","claimed":0}
+    assert delivery=={"enabled":False,"kind":"delivery","claimed":0}
 
 
-@pytest.mark.asyncio
-async def test_noop_adapter_is_rejected_in_production():
-    with (
-        patch("app.workers.notification_outbox_tasks.settings.notification_outbox_consumer_enabled", True),
-        patch("app.workers.notification_outbox_tasks.settings.notification_delivery_provider", "noop"),
-        patch("app.workers.notification_outbox_tasks.settings.app_env", "production"),
-    ):
-        with pytest.raises(RuntimeError, match="cannot be enabled in production"):
-            await consume_notification_outbox_batch()
-
-
-@pytest.mark.asyncio
-async def test_slack_provider_requires_secret_before_claiming():
-    with (
-        patch("app.workers.notification_outbox_tasks.settings.notification_outbox_consumer_enabled", True),
-        patch("app.workers.notification_outbox_tasks.settings.notification_delivery_provider", "slack"),
-        patch("app.workers.notification_outbox_tasks.settings.slack_webhook_url", None),
-    ):
-        with pytest.raises(RuntimeError, match="SLACK_WEBHOOK_URL"):
-            await consume_notification_outbox_batch()
-
-
-def test_configured_slack_provider_selects_slack_adapter_without_network():
-    with (
-        patch("app.workers.notification_outbox_tasks.settings.notification_delivery_provider", "slack"),
-        patch(
-            "app.workers.notification_outbox_tasks.settings.slack_webhook_url",
-            "https://hooks.slack.com/services/a/b/c",
-        ),
-    ):
-        assert isinstance(build_notification_adapter(), SlackNotificationAdapter)
+def test_production_rejects_memory_secret_store_in_configuration():
+    from app.core.config import Settings
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError,match="in-memory"):
+        Settings(_env_file=None,app_env="production",database_url="postgresql+asyncpg://u:p@db/x",secret_key="x"*40,notification_secret_store="memory")

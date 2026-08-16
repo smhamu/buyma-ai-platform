@@ -21,7 +21,7 @@ router = APIRouter(prefix="/notification-outbox", tags=["Notification Outbox"])
 
 @router.get("")
 async def list_notification_outbox(
-    status: Literal["pending", "processing", "delivered", "failed", "cancelled"] | None = None,
+    status: Literal["pending", "processing", "expanded", "delivered", "failed", "cancelled"] | None = None,
     event_type: Literal["supplier_policy_review_changed"] | None = None,
     resource_id: UUID | None = None, created_from: datetime | None = None,
     created_to: datetime | None = None, page: int = Query(default=1, ge=1),
@@ -66,6 +66,7 @@ async def notification_outbox_stats(
     now = datetime.now(oldest.tzinfo) if oldest is not None and oldest.tzinfo else datetime.now()
     data = NotificationOutboxStatsResponse(
         pending_count=counts.get("pending", 0), processing_count=counts.get("processing", 0),
+        expanded_count=counts.get("expanded", 0),
         delivered_count=counts.get("delivered", 0), failed_count=counts.get("failed", 0),
         cancelled_count=counts.get("cancelled", 0), oldest_pending_at=oldest,
         oldest_pending_age_seconds=max(0, int((now - oldest).total_seconds())) if oldest else None,

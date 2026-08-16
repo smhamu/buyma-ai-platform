@@ -28,5 +28,6 @@ def test_production_rejects_noop_and_accepts_configured_slack():
     configured = settings(
         app_env="production", notification_delivery_provider="slack",
         slack_webhook_url="https://hooks.slack.com/services/a/b/c", database_echo=False,
+        notification_secret_store="ssm",
     )
     assert configured.notification_delivery_provider == "slack"

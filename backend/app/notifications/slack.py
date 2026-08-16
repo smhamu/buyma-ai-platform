@@ -13,6 +13,16 @@ logger = logging.getLogger("buyma-ai-platform.notifications.slack")
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
+def validate_slack_webhook_url(webhook_url: str) -> str:
+    parsed = urlparse(webhook_url)
+    if (
+        parsed.scheme != "https" or parsed.hostname != "hooks.slack.com"
+        or parsed.username or parsed.password or not parsed.path.startswith("/services/")
+    ):
+        raise ValueError("Slack webhook must be an HTTPS hooks.slack.com Incoming Webhook URL.")
+    return webhook_url
+
+
 def _plain(value: object) -> str:
     return re.sub(r"[\r\n\t]+", " ", str(value or "")).strip()
 
@@ -63,10 +73,7 @@ class SlackNotificationAdapter:
         self, webhook_url: str, *, frontend_base_url: str | None = None,
         http_client: httpx.AsyncClient | None = None,
     ):
-        parsed = urlparse(webhook_url)
-        if parsed.scheme != "https" or parsed.hostname != "hooks.slack.com" or not parsed.path.startswith("/services/"):
-            raise ValueError("SLACK_WEBHOOK_URL must be a Slack HTTPS Incoming Webhook URL.")
-        self._webhook_url = webhook_url
+        self._webhook_url = validate_slack_webhook_url(webhook_url)
         self._frontend_base_url = frontend_base_url
         self._http_client = http_client
 

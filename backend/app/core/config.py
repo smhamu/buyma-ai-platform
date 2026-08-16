@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     notification_delivery_provider: Literal["disabled", "noop", "slack"] = "disabled"
     slack_webhook_url: str | None = None
     production_base_url: str | None = None
+    notification_secret_store: Literal["ssm", "memory"] = "ssm"
+    aws_region: str | None = None
     notification_outbox_batch_size: int = 50
     notification_outbox_max_attempts: int = 5
     notification_outbox_base_backoff_seconds: int = 60
@@ -58,6 +60,8 @@ class Settings(BaseSettings):
             raise ValueError("DATABASE_ECHO must be false in production.")
         if self.notification_delivery_provider == "noop":
             raise ValueError("The noop notification adapter cannot be enabled in production.")
+        if self.notification_secret_store == "memory":
+            raise ValueError("The in-memory notification secret store cannot be used in production.")
         return self
 
     @model_validator(mode="after")

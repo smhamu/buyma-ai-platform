@@ -28,6 +28,8 @@ export function AppLayout() {
           <NavLink to="/suppliers" className={({isActive})=>`sidebar__link ${isActive?"sidebar__link--active":""}`}>Suppliers</NavLink>
           <NavLink to="/supplier-policy-review" className={({isActive})=>`sidebar__link ${isActive?"sidebar__link--active":""}`}>Policy Review</NavLink>
           <NavLink to="/brands" className={({isActive})=>`sidebar__link ${isActive?"sidebar__link--active":""}`}>Brands</NavLink>
+          <div className="sidebar__section">Account</div>
+          <NavLink to="/notification-settings" className={({isActive})=>`sidebar__link ${isActive?"sidebar__link--active":""}`}>Notification Settings</NavLink>
         </nav>
       </aside>
 

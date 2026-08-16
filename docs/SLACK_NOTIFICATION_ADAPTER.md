@@ -45,4 +45,4 @@ The adapter receives the Outbox dedupe key as an idempotency key, preserving the
 5. Create a controlled review transition and confirm Outbox state and the Slack message.
 6. Monitor pending/processing/failed counts and oldest pending age.
 
-No automatic live webhook test is included. A development webhook may be verified manually only after code deployment. One environment-wide webhook receives all users' policy-review notifications; per-user Slack OAuth, channel selection, acknowledgements, and notification-center features are future work.
+No automatic live webhook test is included. A development webhook may be verified manually only after code deployment. User-specific webhook settings are now the source of truth; per-user Slack OAuth, channel discovery, acknowledgements, and notification-center features remain future work. The environment webhook selector is retained only for rollback compatibility and is never a silent fallback.

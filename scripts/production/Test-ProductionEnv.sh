@@ -49,6 +49,7 @@ case "$notification_provider" in
     errors=1
     ;;
 esac
+[[ "${values[NOTIFICATION_SECRET_STORE]:-ssm}" == ssm ]] || { echo "ERROR: Production notification secrets must use SSM." >&2; errors=1; }
 
 (( errors == 0 )) || { echo "Production environment validation failed. Secret values were not printed." >&2; exit 1; }
 echo "Production environment validation passed. Secret values were not printed."
