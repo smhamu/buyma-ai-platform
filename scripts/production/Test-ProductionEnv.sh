@@ -34,6 +34,21 @@ hsts_header="${values[HSTS_HEADER]:-}"
 [[ -z "$hsts_header" || "$hsts_header" == "max-age=31536000; includeSubDomains" ]] || { echo "ERROR: HSTS_HEADER is not an approved value." >&2; errors=1; }
 secret_key="${values[SECRET_KEY]:-}"
 (( ${#secret_key} >= 32 )) || { echo "ERROR: SECRET_KEY must be at least 32 characters." >&2; errors=1; }
+notification_provider="${values[NOTIFICATION_DELIVERY_PROVIDER]:-disabled}"
+case "$notification_provider" in
+  disabled) ;;
+  slack)
+    [[ -n "${values[SLACK_WEBHOOK_URL]:-}" ]] || { echo "ERROR: SLACK_WEBHOOK_URL is required for Slack delivery." >&2; errors=1; }
+    ;;
+  noop)
+    echo "ERROR: noop notification delivery is prohibited in production." >&2
+    errors=1
+    ;;
+  *)
+    echo "ERROR: NOTIFICATION_DELIVERY_PROVIDER is invalid." >&2
+    errors=1
+    ;;
+esac
 
 (( errors == 0 )) || { echo "Production environment validation failed. Secret values were not printed." >&2; exit 1; }
 echo "Production environment validation passed. Secret values were not printed."

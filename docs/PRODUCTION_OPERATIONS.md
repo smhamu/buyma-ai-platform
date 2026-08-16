@@ -78,7 +78,7 @@ HSTS after HTTPS validation, and Production Playwright E2E.
 Production Backend and Celery Worker use the explicit Squid proxy configured in
 `docker-compose.prod.yml`. The application containers remain attached only to
 internal networks; only the proxy joins the outbound network. Squid permits HTTPS
-CONNECT to `api.openai.com:443` and denies every other destination. It has no host
+CONNECT to `api.openai.com:443` and `hooks.slack.com:443` and denies every other destination. It has no host
 published port, disables access and cache-store logs, and never terminates TLS, so
 OpenAI Authorization headers and request bodies remain encrypted end to end.
 

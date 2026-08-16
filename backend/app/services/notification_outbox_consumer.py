@@ -27,6 +27,9 @@ class DeliveryResult:
     success: bool
     retryable: bool = False
     error: str | None = None
+    provider_status_code: int | None = None
+    retry_after_seconds: int | None = None
+    safe_error_code: str | None = None
 
 
 class NotificationChannelAdapter(Protocol):
@@ -175,7 +178,8 @@ class NotificationOutboxConsumerService:
         await self.db.commit()
 
     async def mark_failure(
-        self, event_id: UUID, *, error: str | None, retryable: bool, now: datetime | None = None
+        self, event_id: UUID, *, error: str | None, retryable: bool,
+        retry_after_seconds: int | None = None, now: datetime | None = None
     ) -> str:
         now = now or datetime.now(timezone.utc)
         event = await self.db.scalar(
@@ -188,7 +192,8 @@ class NotificationOutboxConsumerService:
         event.lease_expires_at = None
         if retryable and event.attempt_count < self.max_attempts:
             event.status = "pending"
-            event.available_at = now + timedelta(seconds=self.backoff_seconds(event.attempt_count))
+            delay = max(self.backoff_seconds(event.attempt_count), retry_after_seconds or 0)
+            event.available_at = now + timedelta(seconds=delay)
             outcome = "retried"
         else:
             event.status = "failed"
@@ -220,7 +225,10 @@ class NotificationOutboxConsumerService:
                 delivered += 1
                 continue
             outcome = await self.mark_failure(
-                row.id, error=result.error, retryable=result.retryable, now=now
+                row.id, error=result.safe_error_code or result.error,
+                retryable=result.retryable,
+                retry_after_seconds=result.retry_after_seconds,
+                now=now,
             )
             retried += outcome == "retried"
             failed += outcome == "failed"

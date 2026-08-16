@@ -117,6 +117,16 @@ async def test_retry_backoff_then_max_attempts_dead_letters_as_failed():
 
 
 @pytest.mark.asyncio
+async def test_retry_after_is_a_minimum_delay():
+    now = datetime.now(timezone.utc); row = event(attempts=1)
+    consumer, db = service(base_backoff_seconds=10); db.scalar.return_value = row
+    await consumer.mark_failure(
+        row.id, error="rate limited", retryable=True, retry_after_seconds=45, now=now
+    )
+    assert row.available_at == now + timedelta(seconds=45)
+
+
+@pytest.mark.asyncio
 async def test_dispatch_isolates_failure_and_passes_idempotency_key():
     bad, good = event(), event()
     consumer, _ = service()

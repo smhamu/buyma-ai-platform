@@ -160,6 +160,12 @@ try:
         "SECRET_KEY": dotenv_quote(values["SECRET_KEY"]),
         "OPENAI_API_KEY": dotenv_quote(values["OPENAI_API_KEY"]),
     }
+    # Slack is optional while delivery is disabled. If provisioned in SSM, keep
+    # it secret and map it without ever printing the value.
+    if "SLACK_WEBHOOK_URL" in values:
+        if not values["SLACK_WEBHOOK_URL"] or "SLACK_WEBHOOK_URL" not in key_indexes:
+            abort()
+        replacements["SLACK_WEBHOOK_URL"] = dotenv_quote(values["SLACK_WEBHOOK_URL"])
 
     for key, value in replacements.items():
         lines[key_indexes[key]] = f"{key}={value}"

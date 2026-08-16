@@ -2,7 +2,7 @@
 
 ## Purpose and safety boundary
 
-The consumer delivers the existing supplier policy review outbox without changing review state or supplier policy. Email, Slack, and LINE delivery are intentionally not implemented. Production defaults to `NOTIFICATION_OUTBOX_CONSUMER_ENABLED=false` and `NOTIFICATION_OUTBOX_ADAPTER=disabled`; the noop adapter is rejected in production so an event cannot be falsely marked delivered.
+The consumer delivers the existing supplier policy review outbox without changing review state or supplier policy. Production defaults to `NOTIFICATION_OUTBOX_CONSUMER_ENABLED=false` and `NOTIFICATION_DELIVERY_PROVIDER=disabled`; the noop adapter is rejected in production so an event cannot be falsely marked delivered. Slack Incoming Webhook is the first real adapter; Email and LINE are not implemented.
 
 ## Claim and lease
 

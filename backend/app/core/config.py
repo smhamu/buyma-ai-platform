@@ -1,6 +1,7 @@
 import os
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -31,7 +32,9 @@ class Settings(BaseSettings):
     registration_enabled: bool = True
     enable_api_docs: bool = True
     notification_outbox_consumer_enabled: bool = False
-    notification_outbox_adapter: Literal["disabled", "noop"] = "disabled"
+    notification_delivery_provider: Literal["disabled", "noop", "slack"] = "disabled"
+    slack_webhook_url: str | None = None
+    production_base_url: str | None = None
     notification_outbox_batch_size: int = 50
     notification_outbox_max_attempts: int = 5
     notification_outbox_base_backoff_seconds: int = 60
@@ -53,6 +56,19 @@ class Settings(BaseSettings):
             raise ValueError("Production SECRET_KEY must be a unique value of at least 32 characters.")
         if self.database_echo:
             raise ValueError("DATABASE_ECHO must be false in production.")
+        if self.notification_delivery_provider == "noop":
+            raise ValueError("The noop notification adapter cannot be enabled in production.")
+        return self
+
+    @model_validator(mode="after")
+    def validate_notification_delivery(self):
+        if self.notification_delivery_provider == "slack" and not self.slack_webhook_url:
+            raise ValueError("SLACK_WEBHOOK_URL is required when Slack delivery is enabled.")
+        if self.production_base_url:
+            parsed = urlparse(self.production_base_url)
+            allowed_schemes = {"https"} if self.app_env == "production" else {"http", "https"}
+            if parsed.scheme not in allowed_schemes or not parsed.hostname or parsed.username or parsed.password:
+                raise ValueError("PRODUCTION_BASE_URL must be a safe absolute HTTP(S) origin.")
         return self
 
 
