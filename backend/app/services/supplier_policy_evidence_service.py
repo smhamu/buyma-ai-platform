@@ -18,9 +18,10 @@ POLICY_FIELDS = {
 
 
 class SupplierPolicyEvidenceService:
-    def __init__(self, repository: SupplierPolicyEvidenceRepository, supplier_service: SupplierService):
+    def __init__(self, repository: SupplierPolicyEvidenceRepository, supplier_service: SupplierService, review_state_service=None):
         self.repository = repository
         self.supplier_service = supplier_service
+        self.review_state_service = review_state_service
 
     @staticmethod
     def policy_snapshot(supplier) -> dict:
@@ -48,7 +49,12 @@ class SupplierPolicyEvidenceService:
             checked_by_user_id=current_user.id,
             policy_snapshot=self.policy_snapshot(supplier),
         )
-        return await self.repository.create(values)
+        if self.review_state_service is None:
+            return await self.repository.create(values)
+        evidence = await self.repository.create_without_commit(values)
+        # Evidence, review state, transition and outbox are committed together.
+        await self.review_state_service.evaluate_and_record_supplier_review(supplier.id)
+        return evidence
 
     async def require_access(self, supplier_id: UUID, evidence_id: UUID, current_user):
         await self.supplier_service.require_access(

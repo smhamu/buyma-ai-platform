@@ -65,3 +65,33 @@ class SupplierPolicyReviewPage(BaseModel):
     total: int
     total_pages: int
     summary: dict[str, int]
+
+
+class SupplierPolicyReviewTransitionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    supplier_id: UUID
+    state_version: int
+    from_status: ReviewStatus | None
+    to_status: ReviewStatus
+    changed_evidence_types: list[ReviewEvidenceType]
+    reason_summary: str
+    occurred_at: datetime
+    created_at: datetime
+
+
+class NotificationOutboxResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    event_type: Literal["supplier_policy_review_changed"]
+    resource_type: Literal["supplier"]
+    resource_id: UUID
+    payload: dict
+    dedupe_key: str
+    status: Literal["pending", "processing", "delivered", "failed", "cancelled"]
+    available_at: datetime
+    processed_at: datetime | None
+    attempt_count: int
+    last_error: str | None
+    created_at: datetime
+    updated_at: datetime

@@ -26,6 +26,8 @@ from app.schemas.supplier_policy_evidence import (
     SupplierPolicyEvidenceSummaryEnvelope,
 )
 from app.services.supplier_policy_evidence_service import SupplierPolicyEvidenceService
+from app.services.supplier_policy_review_service import SupplierPolicyReviewService
+from app.services.supplier_policy_review_state_service import SupplierPolicyReviewStateService
 
 router = APIRouter(prefix="/suppliers", tags=["EU Suppliers"])
 
@@ -36,7 +38,17 @@ def get_supplier_service(db: AsyncSession = Depends(get_db)) -> SupplierService:
 
 def get_policy_evidence_service(db: AsyncSession = Depends(get_db)) -> SupplierPolicyEvidenceService:
     supplier_service = SupplierService(SupplierRepository(db), BrandRepository(db))
-    return SupplierPolicyEvidenceService(SupplierPolicyEvidenceRepository(db), supplier_service)
+    evidence = SupplierPolicyEvidenceService(SupplierPolicyEvidenceRepository(db), supplier_service)
+    evidence.review_state_service = SupplierPolicyReviewStateService(
+        db, SupplierPolicyReviewService(db, evidence)
+    )
+    return evidence
+
+
+def get_review_state_service(db: AsyncSession = Depends(get_db)) -> SupplierPolicyReviewStateService:
+    supplier_service = SupplierService(SupplierRepository(db), BrandRepository(db))
+    evidence = SupplierPolicyEvidenceService(SupplierPolicyEvidenceRepository(db), supplier_service)
+    return SupplierPolicyReviewStateService(db, SupplierPolicyReviewService(db, evidence))
 
 
 @router.post(
@@ -125,13 +137,14 @@ async def get_policy_evidence(
 
 
 @router.post("")
-async def create_supplier(payload: SupplierCreate, service: SupplierService = Depends(get_supplier_service), current_user: User = Depends(get_current_user)):
+async def create_supplier(payload: SupplierCreate, service: SupplierService = Depends(get_supplier_service), review_state: SupplierPolicyReviewStateService = Depends(get_review_state_service), current_user: User = Depends(get_current_user)):
     values = payload.model_dump()
     brand_ids = values.pop("brand_ids")
     values["website_url"] = str(values["website_url"])
     values["owner_user_id"] = current_user.id
     supplier = await service.repository.create(values)
     await service.set_brands(supplier, brand_ids)
+    await review_state.evaluate_and_record_supplier_review(supplier.id)
     return success_response(data=SupplierResponse.model_validate(supplier), message="Supplier created successfully.")
 
 
@@ -166,7 +179,7 @@ async def get_supplier(supplier_id: UUID, service: SupplierService = Depends(get
 
 
 @router.put("/{supplier_id}")
-async def update_supplier(supplier_id: UUID, payload: SupplierUpdate, service: SupplierService = Depends(get_supplier_service), current_user: User = Depends(get_current_user)):
+async def update_supplier(supplier_id: UUID, payload: SupplierUpdate, service: SupplierService = Depends(get_supplier_service), review_state: SupplierPolicyReviewStateService = Depends(get_review_state_service), current_user: User = Depends(get_current_user)):
     supplier = await service.require_access(supplier_id, current_user.id, current_user.role == "admin")
     values = payload.model_dump(exclude_unset=True)
     brand_ids = values.pop("brand_ids", None)
@@ -175,6 +188,7 @@ async def update_supplier(supplier_id: UUID, payload: SupplierUpdate, service: S
     supplier = await service.repository.update(supplier, values)
     if brand_ids is not None:
         await service.set_brands(supplier, brand_ids)
+    await review_state.evaluate_and_record_supplier_review(supplier.id)
     return success_response(data=SupplierResponse.model_validate(supplier), message="Supplier updated successfully.")
 
 

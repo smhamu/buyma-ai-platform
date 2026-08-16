@@ -10,6 +10,7 @@ celery_app = Celery(
     include=[
         "app.workers.embedding_tasks",
         "app.workers.embedding_recovery_tasks",
+        "app.workers.supplier_policy_review_tasks",
     ],
 )
 
@@ -30,5 +31,9 @@ celery_app.conf.beat_schedule = {
     "recover-stale-embedding-jobs": {
         "task": "embedding.recover_stale_jobs",
         "schedule": 60.0,
+    },
+    "evaluate-supplier-policy-reviews": {
+        "task": "supplier_policy_review.evaluate",
+        "schedule": 3600.0,
     },
 }

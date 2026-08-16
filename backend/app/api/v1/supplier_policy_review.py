@@ -2,6 +2,7 @@ from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
@@ -13,11 +14,14 @@ from app.repositories.supplier_policy_evidence_repository import SupplierPolicyE
 from app.repositories.supplier_repository import SupplierRepository
 from app.schemas.supplier_policy_review import (
     ReviewEvidenceType, ReviewStatus, SupplierPolicyReviewItem, SupplierPolicyReviewPage,
+    SupplierPolicyReviewTransitionResponse,
     SupplierPolicyReviewSettingsResponse, SupplierPolicyReviewSettingsUpdate,
 )
 from app.services.supplier_policy_evidence_service import SupplierPolicyEvidenceService
 from app.services.supplier_policy_review_service import SupplierPolicyReviewService
 from app.services.supplier_service import SupplierService
+from app.models.supplier_policy_review_transition import SupplierPolicyReviewTransition
+from app.schemas.pagination import PaginatedResponse
 
 router = APIRouter(prefix="/supplier-policy-review", tags=["Supplier Policy Review"])
 
@@ -61,3 +65,24 @@ async def review_detail(supplier_id: UUID, service=Depends(get_service), current
     settings = await service.settings(current_user.id)
     data = SupplierPolicyReviewItem.model_validate(await service.evaluate(supplier, settings))
     return success_response(data=data, message="Supplier policy review fetched successfully.")
+
+
+@router.get("/{supplier_id}/transitions")
+async def review_transitions(
+    supplier_id: UUID, page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100), service=Depends(get_service),
+    current_user: User = Depends(get_current_user),
+):
+    await service.evidence_service.supplier_service.require_access(supplier_id, current_user.id, current_user.role == "admin")
+    filters = [SupplierPolicyReviewTransition.supplier_id == supplier_id]
+    total = int((await service.db.scalar(select(func.count(SupplierPolicyReviewTransition.id)).where(*filters))) or 0)
+    rows = await service.db.execute(
+        select(SupplierPolicyReviewTransition).where(*filters)
+        .order_by(desc(SupplierPolicyReviewTransition.occurred_at), desc(SupplierPolicyReviewTransition.id))
+        .offset((page - 1) * page_size).limit(page_size)
+    )
+    data = PaginatedResponse[SupplierPolicyReviewTransitionResponse](
+        items=[SupplierPolicyReviewTransitionResponse.model_validate(item) for item in rows.scalars()],
+        page=page, page_size=page_size, total=total, total_pages=(total + page_size - 1) // page_size,
+    )
+    return success_response(data=data, message="Supplier policy review transitions fetched successfully.")
