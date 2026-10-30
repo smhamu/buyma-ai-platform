@@ -29,3 +29,7 @@ Only matched sources with supplier, brand, title, price, and currency can be con
 Future integrations should implement a supplier-specific fetcher boundary with `fetch_product(url)` and `normalize(payload)` operations. Official API, JSON-LD, and explicitly approved HTML parsers must remain separate providers. Do not introduce a universal scraper, CAPTCHA bypass, session scraping, proxy rotation, or anti-bot evasion.
 
 Raw payloads must never contain credentials or session material and must be size-limited before persistence. Production fetchers should run as constrained background jobs with per-supplier rate limits and audit logs.
+
+The first provider boundary is available under `app/research_providers`. Suppliers select an allowlisted provider with `parser_key`; unknown keys fail closed. `schema_org_product_v1` parses schema.org `Product` JSON-LD but is not enabled for any seeded supplier. Administrators can explicitly run `POST /research-ingestion/{source_id}/fetch` only after all supplier policy gates are enabled.
+
+Fetches accept only the supplier's exact HTTP(S) hostname, validate every resolved address as public, pin the connection to a validated address while preserving the original Host header and TLS SNI, reject cross-domain redirects, ignore environment proxies, limit redirects and response bytes, and accept only HTML or JSON content. A failed fetch records a bounded error code/message on the source. Existing luxury suppliers remain manual because no automated collection permission or documented public Product API has been confirmed.

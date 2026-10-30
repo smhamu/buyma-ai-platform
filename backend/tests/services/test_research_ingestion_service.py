@@ -6,6 +6,7 @@ from uuid import uuid4
 import pytest
 
 from app.services.research_ingestion_service import ResearchIngestionService
+from app.research_providers.base import FetchedProduct
 
 
 def test_automatic_fetch_is_disabled_by_default():
@@ -14,14 +15,20 @@ def test_automatic_fetch_is_disabled_by_default():
 
 
 def test_prohibited_terms_and_disallowed_robots_fail_closed():
-    base = dict(is_active=True, automated_fetch_enabled=True, ingestion_source_type="html_parser")
+    base = dict(is_active=True, automated_fetch_enabled=True, ingestion_source_type="html_parser", official_api_available=False)
     assert not ResearchIngestionService.automatic_fetch_allowed(SimpleNamespace(**base, terms_status="prohibited", robots_status="allowed"))
     assert not ResearchIngestionService.automatic_fetch_allowed(SimpleNamespace(**base, terms_status="allowed", robots_status="disallowed"))
 
 
 def test_approved_fetch_policy_can_be_enabled_explicitly():
-    supplier = SimpleNamespace(is_active=True, automated_fetch_enabled=True, ingestion_source_type="official_api", terms_status="allowed", robots_status="allowed")
+    supplier = SimpleNamespace(is_active=True, automated_fetch_enabled=True, ingestion_source_type="official_api", terms_status="allowed", robots_status="allowed", official_api_available=True)
     assert ResearchIngestionService.automatic_fetch_allowed(supplier)
+
+
+def test_restricted_terms_and_unconfirmed_official_api_fail_closed():
+    base = dict(is_active=True, automated_fetch_enabled=True, ingestion_source_type="official_api", robots_status="allowed")
+    assert not ResearchIngestionService.automatic_fetch_allowed(SimpleNamespace(**base, terms_status="restricted", official_api_available=True))
+    assert not ResearchIngestionService.automatic_fetch_allowed(SimpleNamespace(**base, terms_status="allowed", official_api_available=False))
 
 
 @pytest.mark.asyncio
@@ -116,3 +123,46 @@ async def test_source_purchase_restriction_is_inherited_by_candidate():
 
     assert candidate_repository.create.await_args.args[0]["purchase_restriction"] == "client_advisor_only"
     assert source.processing_status == "candidate_created"
+
+
+@pytest.mark.asyncio
+async def test_admin_fetch_normalizes_and_matches_supplier_brand():
+    brand = SimpleNamespace(id=uuid4(), name="Example Brand")
+    supplier = SimpleNamespace(
+        id=uuid4(), website_url="https://shop.example", brands=[brand], is_active=True,
+        automated_fetch_enabled=True, ingestion_source_type="structured_data", terms_status="allowed",
+        robots_status="allowed", official_api_available=False, parser_key="example_v1",
+        request_interval_seconds=60, last_fetch_at=None,
+    )
+    source = SimpleNamespace(
+        supplier_id=supplier.id, candidate_id=None, normalized_source_url="https://shop.example/item/1",
+        external_product_id=None, source_type="url_manual", processing_status="pending",
+        error_code=None, error_message=None, fetched_at=None, brand_id=None,
+    )
+    product = FetchedProduct("Bag", "Example Brand", Decimal("100"), "EUR", "in_stock", "SKU-1", {"sku": "SKU-1"})
+    provider = SimpleNamespace(fetch_product=AsyncMock(return_value=product))
+    registry = SimpleNamespace(get=lambda key: provider)
+    db = SimpleNamespace(commit=AsyncMock(), refresh=AsyncMock())
+    service = ResearchIngestionService(SimpleNamespace(db=db), SimpleNamespace(find_by_id=AsyncMock(return_value=supplier)), SimpleNamespace(), SimpleNamespace())
+
+    result = await service.fetch_source(source, registry)
+
+    assert result.processing_status == "matched"
+    assert result.brand_id == brand.id
+    assert result.normalized_title == "Bag"
+    assert result.normalized_price == Decimal("100")
+    assert result.external_product_id == "SKU-1"
+    db.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_fetch_refuses_supplier_without_explicit_policy_approval():
+    supplier = SimpleNamespace(
+        id=uuid4(), is_active=True, automated_fetch_enabled=False, ingestion_source_type="structured_data",
+        terms_status="allowed", robots_status="allowed", official_api_available=False,
+    )
+    source = SimpleNamespace(supplier_id=supplier.id, candidate_id=None)
+    service = ResearchIngestionService(SimpleNamespace(), SimpleNamespace(find_by_id=AsyncMock(return_value=supplier)), SimpleNamespace(), SimpleNamespace())
+    with pytest.raises(Exception) as exc:
+        await service.fetch_source(source, SimpleNamespace())
+    assert exc.value.code == "AUTOMATIC_FETCH_NOT_ALLOWED"

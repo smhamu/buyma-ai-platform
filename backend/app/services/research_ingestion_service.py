@@ -1,5 +1,6 @@
 import csv
 import io
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from uuid import UUID
 
@@ -86,4 +87,59 @@ class ResearchIngestionService:
 
     @staticmethod
     def automatic_fetch_allowed(supplier) -> bool:
-        return bool(supplier.is_active and supplier.automated_fetch_enabled and supplier.ingestion_source_type in {"official_api", "structured_data", "html_parser"} and supplier.terms_status != "prohibited" and supplier.robots_status != "disallowed")
+        if not (supplier.is_active and supplier.automated_fetch_enabled and supplier.terms_status == "allowed"):
+            return False
+        if supplier.ingestion_source_type == "official_api":
+            return bool(supplier.official_api_available)
+        return supplier.ingestion_source_type in {"structured_data", "html_parser"} and supplier.robots_status == "allowed"
+
+    async def fetch_source(self, source, provider_registry):
+        if source.candidate_id:
+            raise AppException(409, "SOURCE_ALREADY_CONVERTED", "Converted sources cannot be fetched again.")
+        supplier = await self.suppliers.find_by_id(source.supplier_id)
+        if supplier is None:
+            raise NotFoundException("Supplier")
+        if not self.automatic_fetch_allowed(supplier):
+            raise AppException(409, "AUTOMATIC_FETCH_NOT_ALLOWED", "Automatic fetch is not enabled by the supplier policy.")
+        now = datetime.now(timezone.utc)
+        if supplier.last_fetch_at and supplier.request_interval_seconds:
+            elapsed = (now - supplier.last_fetch_at).total_seconds()
+            if elapsed < supplier.request_interval_seconds:
+                raise AppException(429, "SUPPLIER_RATE_LIMITED", "The supplier request interval has not elapsed.")
+        provider = provider_registry.get(supplier.parser_key)
+        try:
+            product = await provider.fetch_product(source.normalized_source_url, supplier)
+            brand = next((item for item in supplier.brands if product.brand and item.name.casefold() == product.brand.casefold()), None)
+            source.source_type = supplier.ingestion_source_type
+            source.external_product_id = product.external_product_id or source.external_product_id
+            source.raw_title = product.title
+            source.raw_brand = product.brand
+            source.raw_price = product.price
+            source.raw_currency = product.currency
+            source.raw_availability = product.availability
+            source.raw_payload = product.raw_payload
+            source.normalized_title = product.title
+            source.normalized_price = product.price
+            source.normalized_currency = product.currency
+            source.normalized_availability = product.availability
+            source.brand_id = brand.id if brand else None
+            source.processing_status = "matched" if brand else "normalized"
+            source.error_code = source.error_message = None
+            source.fetched_at = supplier.last_fetch_at = now
+            await self.repository.db.commit()
+            await self.repository.db.refresh(source)
+            return source
+        except AppException as exc:
+            source.processing_status = "failed"
+            source.error_code = exc.code
+            source.error_message = str(exc.detail.get("message", "Fetch failed."))[:1000]
+            source.fetched_at = supplier.last_fetch_at = now
+            await self.repository.db.commit()
+            raise
+        except Exception as exc:
+            source.processing_status = "failed"
+            source.error_code = "SOURCE_FETCH_ERROR"
+            source.error_message = "The supplier product could not be fetched."
+            source.fetched_at = supplier.last_fetch_at = now
+            await self.repository.db.commit()
+            raise AppException(502, "SOURCE_FETCH_ERROR", "The supplier product could not be fetched.") from exc

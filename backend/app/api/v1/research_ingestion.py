@@ -18,6 +18,7 @@ from app.schemas.product_research import ProductResearchResponse
 from app.schemas.research_ingestion import CandidateConversionRequest, CsvImportResponse, CsvRowResult, ResearchSourceResponse, UrlIngestionRequest
 from app.services.research_ingestion_service import ResearchIngestionService
 from app.repositories.product_category_repository import ProductCategoryRepository
+from app.research_providers.registry import get_research_provider_registry
 
 router = APIRouter(prefix="/research-ingestion", tags=["Research Ingestion"])
 
@@ -57,6 +58,15 @@ async def create_candidate(source_id: UUID, payload: CandidateConversionRequest,
     source = await service.require_access(source_id, user.id, user.role == "admin")
     candidate = await service.create_candidate(source, payload, user.id, user.role == "admin")
     return success_response(data=ProductResearchResponse.model_validate(candidate), message="Candidate created from source.")
+
+
+@router.post("/{source_id}/fetch")
+async def fetch_source(source_id: UUID, service: ResearchIngestionService = Depends(get_service), user: User = Depends(get_current_user)):
+    if user.role != "admin":
+        raise AppException(403, "ADMIN_REQUIRED", "Only administrators can fetch supplier product data.")
+    source = await service.require_access(source_id, user.id, True)
+    result = await service.fetch_source(source, get_research_provider_registry())
+    return success_response(data=ResearchSourceResponse.model_validate(result), message="Supplier product data fetched and normalized.")
 
 
 @router.delete("/{source_id}")
