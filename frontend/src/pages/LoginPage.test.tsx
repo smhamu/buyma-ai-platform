@@ -23,7 +23,7 @@ describe("LoginPage", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Login" }));
+    fireEvent.click(screen.getByRole("button", { name: "ログイン" }));
 
     expect(
       screen.getByText("メールアドレスを入力してください。"),
@@ -45,13 +45,13 @@ describe("LoginPage", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.change(screen.getByLabelText("Email"), {
+    fireEvent.change(screen.getByLabelText("メールアドレス"), {
       target: { value: "user@example.com" },
     });
-    fireEvent.change(screen.getByLabelText("Password"), {
+    fireEvent.change(screen.getByLabelText("パスワード"), {
       target: { value: "password" },
     });
-    fireEvent.submit(screen.getByRole("button", { name: "Login" }).closest("form")!);
+    fireEvent.submit(screen.getByRole("button", { name: "ログイン" }).closest("form")!);
 
     await waitFor(() => {
       expect(loginMock).toHaveBeenCalledWith({

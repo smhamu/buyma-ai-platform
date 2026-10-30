@@ -65,36 +65,36 @@ test("admin ingests EU supplier research sources without external fetching", asy
     });
 
     await page.goto("/login");
-    await page.getByLabel("Email").fill(credentials.email);
-    await page.getByLabel("Password").fill(credentials.password);
-    await page.getByRole("button", { name: "Login" }).click();
+    await page.getByLabel("メールアドレス").fill(credentials.email);
+    await page.getByLabel("パスワード").fill(credentials.password);
+    await page.getByRole("button", { name: "ログイン" }).click();
     await expect(page).toHaveURL(/\/knowledge-bases$/);
     const ingestionLink = page.getByRole("link", {
-      name: "Research Ingestion",
+      name: "リサーチ取込",
       exact: true,
     });
     await expect(ingestionLink).toBeVisible();
     await ingestionLink.click();
     await expect(page).toHaveURL(/\/research-ingestion$/);
 
-    await page.getByRole("button", { name: "Add URL" }).click();
-    const urlForm = page.getByRole("form", { name: "URL import form" });
+    await page.getByRole("button", { name: "URLを追加" }).click();
+    const urlForm = page.getByRole("form", { name: "URL登録フォーム" });
     const supplierSelect = urlForm.getByRole("combobox", {
-      name: "Supplier",
+      name: "仕入先",
       exact: true,
     });
     await supplierSelect.selectOption(ids.supplierId);
     await expect(
-      urlForm.getByText(/url_manual.*Automated fetching disabled/),
+      urlForm.getByText(/手動URL.*自動取得: 無効/),
     ).toBeVisible();
-    await urlForm.getByRole("textbox", { name: "Product URL" }).fill(manualUrl);
+    await urlForm.getByRole("textbox", { name: "商品URL" }).fill(manualUrl);
     const [manualResponse] = await Promise.all([
       page.waitForResponse(
         (r) =>
           r.url().includes("/research-ingestion/url") &&
           r.request().method() === "POST",
       ),
-      urlForm.getByRole("button", { name: "Register URL" }).click(),
+      urlForm.getByRole("button", { name: "URLを登録" }).click(),
     ]);
     expect(manualResponse.ok()).toBeTruthy();
     const manualRow = page
@@ -114,15 +114,15 @@ test("admin ingests EU supplier research sources without external fetching", asy
     expect(manualDetail.source_type).toBe("url_manual");
     expect(manualDetail.supplier_id).toBe(ids.supplierId);
 
-    await page.getByRole("button", { name: "CSV Import" }).click();
-    const csvForm = page.getByRole("form", { name: "CSV import form" });
+    await page.getByRole("button", { name: "CSV取込" }).click();
+    const csvForm = page.getByRole("form", { name: "CSV取込フォーム" });
     const csv = [
       "supplier,brand,product_url,product_name,supplier_product_code,supplier_price,currency,availability,buyma_price",
       `${supplierName},${brandName},${csvUrl},${productName},SKU-${suffix},1200,EUR,in_stock,300000`,
       `${supplierName},${brandName},https://${domain}/products/invalid-${suffix},Invalid Product,INVALID-${suffix},not-a-price,EUR,in_stock,`,
       `${supplierName},${brandName},${csvUrl},Duplicate Product,SKU-${suffix},1200,EUR,in_stock,300000`,
     ].join("\n");
-    await csvForm.getByLabel("CSV file").setInputFiles({
+    await csvForm.getByLabel("CSVファイル").setInputFiles({
       name: `e2e-ingestion-${suffix}.csv`,
       mimeType: "text/csv",
       buffer: Buffer.from(csv, "utf-8"),
@@ -133,7 +133,7 @@ test("admin ingests EU supplier research sources without external fetching", asy
           r.url().includes("/research-ingestion/csv") &&
           r.request().method() === "POST",
       ),
-      csvForm.getByRole("button", { name: "Import CSV" }).click(),
+      csvForm.getByRole("button", { name: "CSVを取り込む" }).click(),
     ]);
     const csvStatus = csvResponse.status();
     const csvBody = await csvResponse.text();
@@ -142,12 +142,12 @@ test("admin ingests EU supplier research sources without external fetching", asy
       `CSV import failed with HTTP ${csvStatus}: ${csvBody}`,
     ).toBeTruthy();
     await expect(
-      csvForm.getByText(/1 success.*1 failed.*1 duplicate/),
+      csvForm.getByText(/成功 1件.*失敗 1件.*重複 1件/),
     ).toBeVisible();
-    await expect(csvForm.getByText(/Row 2: success/)).toBeVisible();
-    await expect(csvForm.getByText(/Row 3: failed/)).toBeVisible();
-    await expect(csvForm.getByText(/Row 4: duplicate/)).toBeVisible();
-    await csvForm.getByRole("button", { name: "Close" }).click();
+    await expect(csvForm.getByText(/行\s+2: 成功/)).toBeVisible();
+    await expect(csvForm.getByText(/行\s+3: 失敗/)).toBeVisible();
+    await expect(csvForm.getByText(/行\s+4: 重複/)).toBeVisible();
+    await csvForm.getByRole("button", { name: "閉じる" }).click();
 
     const matchedSources = await findSources(api, token, productName);
     expect(matchedSources).toHaveLength(1);
@@ -156,15 +156,15 @@ test("admin ingests EU supplier research sources without external fetching", asy
     expect(matchedSource.processing_status).toBe("matched");
     const sourceRow = page.getByRole("row").filter({ hasText: productName });
     await expect(sourceRow).toContainText("matched");
-    await sourceRow.getByRole("button", { name: "Create Candidate" }).click();
+    await sourceRow.getByRole("button", { name: "候補を作成" }).click();
     const conversionForm = page.getByRole("form", {
-      name: "Candidate conversion form",
+      name: "商品リサーチ候補変換フォーム",
     });
     await conversionForm
-      .getByRole("spinbutton", { name: "Exchange rate", exact: true })
+      .getByRole("spinbutton", { name: "為替レート", exact: true })
       .fill("165");
     await conversionForm
-      .getByRole("spinbutton", { name: "BUYMA price", exact: true })
+      .getByRole("spinbutton", { name: "BUYMA販売価格", exact: true })
       .fill("300000");
     const [conversionResponse] = await Promise.all([
       page.waitForResponse(
@@ -175,7 +175,7 @@ test("admin ingests EU supplier research sources without external fetching", asy
               `/research-ingestion/${matchedSource.id}/create-candidate`,
             ) && r.request().method() === "POST",
       ),
-      conversionForm.getByRole("button", { name: "Create Candidate" }).click(),
+      conversionForm.getByRole("button", { name: "候補を作成" }).click(),
     ]);
     expect(conversionResponse.ok()).toBeTruthy();
 
@@ -189,7 +189,7 @@ test("admin ingests EU supplier research sources without external fetching", asy
     expect(candidate.supplier_id).toBe(ids.supplierId);
     const convertedRow = page.getByRole("row").filter({ hasText: productName });
     const candidateLink = convertedRow.getByRole("link", {
-      name: "Open Candidate",
+      name: "候補を開く",
     });
     await expect(candidateLink).toBeVisible();
     await candidateLink.click();
@@ -200,7 +200,7 @@ test("admin ingests EU supplier research sources without external fetching", asy
       page.getByRole("heading", { name: productName }),
     ).toBeVisible();
     const overview = page.locator("section.panel").filter({
-      has: page.getByRole("heading", { name: "Overview", exact: true }),
+      has: page.getByRole("heading", { name: "概要", exact: true }),
     });
     await expect(overview.getByText(brandName, { exact: true })).toBeVisible();
     await expect(
@@ -208,7 +208,7 @@ test("admin ingests EU supplier research sources without external fetching", asy
     ).toBeVisible();
 
     await page
-      .getByRole("link", { name: "Research Ingestion", exact: true })
+      .getByRole("link", { name: "リサーチ取込", exact: true })
       .click();
     const protectedRow = page.getByRole("row").filter({ hasText: productName });
     page.once("dialog", (dialog) => dialog.accept());
@@ -218,11 +218,11 @@ test("admin ingests EU supplier research sources without external fetching", asy
           r.url().includes(`/research-ingestion/${matchedSource.id}`) &&
           r.request().method() === "DELETE",
       ),
-      protectedRow.getByRole("button", { name: "Delete" }).click(),
+      protectedRow.getByRole("button", { name: "削除" }).click(),
     ]);
     expect(deleteResponse.status()).toBe(409);
     await expect(
-      page.getByText("Converted source records cannot be deleted.", {
+      page.getByText("候補へ変換済みの取込ソースは削除できません。", {
         exact: true,
       }),
     ).toBeVisible();

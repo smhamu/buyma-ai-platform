@@ -17,6 +17,7 @@ import type {
   DocumentListResponse,
   KnowledgeBase,
 } from "../modules/knowledge-bases/types";
+import { label } from "../modules/product-research/format";
 
 const POLLING_INTERVAL_MS = 3000;
 
@@ -91,7 +92,7 @@ export function KnowledgeBaseDocumentsPage() {
             setError(
               err instanceof ApiClientError
                 ? err.message
-                : "Failed to load documents.",
+                : "ドキュメントを読み込めませんでした。",
             );
           }
         }
@@ -156,7 +157,7 @@ export function KnowledgeBaseDocumentsPage() {
       const documents = await fetchKnowledgeBaseDocuments(knowledgeBaseId, query);
       setResponse(documents);
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Retry failed.");
+      setError(err instanceof ApiClientError ? err.message : "再試行に失敗しました。");
     } finally {
       setRetryingId(null);
     }
@@ -173,14 +174,13 @@ export function KnowledgeBaseDocumentsPage() {
   };
 
   if (loading) {
-    return <div className="page-status">Loading documents...</div>;
+    return <div className="page-status">ドキュメントを読み込み中...</div>;
   }
 
   if (notFound) {
     return (
       <div className="panel panel--empty">
-        <h1>Knowledge Base not found</h1>
-        <p>The Knowledge Base does not exist or you do not have access.</p>
+        <h1>ナレッジベースが見つかりません</h1><p>ナレッジベースが存在しないか、アクセス権限がありません。</p>
       </div>
     );
   }
@@ -188,7 +188,7 @@ export function KnowledgeBaseDocumentsPage() {
   if (error && !response) {
     return (
       <div className="panel panel--error">
-        <h1>Failed to load documents</h1>
+        <h1>ドキュメントを読み込めませんでした</h1>
         <p>{error}</p>
       </div>
     );
@@ -201,13 +201,13 @@ export function KnowledgeBaseDocumentsPage() {
       <div className="page-section__header">
         <div>
           <Link className="text-link" to={`/knowledge-bases/${knowledgeBaseId}`}>
-            ← Knowledge Base Detail
+            ← ナレッジベース詳細
           </Link>
-          <h1>Documents</h1>
-          <p>{knowledgeBase?.name ?? "Knowledge Base"}</p>
+          <h1>ドキュメント</h1>
+          <p>{knowledgeBase?.name ?? "ナレッジベース"}</p>
         </div>
         <button className="primary-button" onClick={() => setUploadOpen(true)}>
-          Upload Document
+          ドキュメントをアップロード
         </button>
       </div>
 
@@ -215,13 +215,13 @@ export function KnowledgeBaseDocumentsPage() {
         <form className="documents-toolbar" onSubmit={handleSearchSubmit}>
           <input
             className="form-field__input"
-            placeholder="Search title or filename"
+            placeholder="タイトルまたはファイル名を検索"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
           />
           <select
             className="form-field__input"
-            aria-label="Filter by ingestion status"
+            aria-label="取込ステータスで絞り込み"
             value={searchParams.get("ingestion_status") ?? "all"}
             onChange={(event) =>
               updateQuery({
@@ -230,15 +230,11 @@ export function KnowledgeBaseDocumentsPage() {
               })
             }
           >
-            <option value="all">All statuses</option>
-            <option value="ready">Ready</option>
-            <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="failed">Failed</option>
+            <option value="all">すべてのステータス</option><option value="ready">準備完了</option><option value="pending">処理待ち</option><option value="processing">処理中</option><option value="failed">失敗</option>
           </select>
           <select
             className="form-field__input"
-            aria-label="Filter by source type"
+            aria-label="登録元で絞り込み"
             value={searchParams.get("source_type") ?? "all"}
             onChange={(event) =>
               updateQuery({
@@ -247,13 +243,11 @@ export function KnowledgeBaseDocumentsPage() {
               })
             }
           >
-            <option value="all">All sources</option>
-            <option value="file">File</option>
-            <option value="manual">Manual</option>
+            <option value="all">すべての登録元</option><option value="file">ファイル</option><option value="manual">手動</option>
           </select>
           <select
             className="form-field__input"
-            aria-label="Filter by latest version"
+            aria-label="バージョンで絞り込み"
             value={searchParams.get("is_latest") ?? "true"}
             onChange={(event) =>
               updateQuery({
@@ -262,12 +256,11 @@ export function KnowledgeBaseDocumentsPage() {
               })
             }
           >
-            <option value="true">Latest only</option>
-            <option value="false">Old versions</option>
+            <option value="true">最新のみ</option><option value="false">旧バージョン</option>
           </select>
           <select
             className="form-field__input"
-            aria-label="Sort documents"
+            aria-label="ドキュメントの並び順"
             value={`${query.sort_by}:${query.sort_order}`}
             onChange={(event) => {
               const [sort_by, sort_order] = event.target.value.split(":");
@@ -277,17 +270,10 @@ export function KnowledgeBaseDocumentsPage() {
               });
             }}
           >
-            <option value="created_at:desc">Created desc</option>
-            <option value="created_at:asc">Created asc</option>
-            <option value="updated_at:desc">Updated desc</option>
-            <option value="updated_at:asc">Updated asc</option>
-            <option value="title:asc">Title asc</option>
-            <option value="title:desc">Title desc</option>
-            <option value="version:desc">Version desc</option>
-            <option value="version:asc">Version asc</option>
+            <option value="created_at:desc">作成日時（新しい順）</option><option value="created_at:asc">作成日時（古い順）</option><option value="updated_at:desc">更新日時（新しい順）</option><option value="updated_at:asc">更新日時（古い順）</option><option value="title:asc">タイトル（昇順）</option><option value="title:desc">タイトル（降順）</option><option value="version:desc">バージョン（降順）</option><option value="version:asc">バージョン（昇順）</option>
           </select>
           <button className="secondary-button" type="submit">
-            Search
+            検索
           </button>
         </form>
       </div>
@@ -296,11 +282,11 @@ export function KnowledgeBaseDocumentsPage() {
 
       {items.length === 0 ? (
         <div className="panel panel--empty">
-          <h2>No documents found</h2>
+          <h2>ドキュメントがありません</h2>
           <p>
             {query.q || query.ingestion_status || query.source_type
-              ? "No documents matched the current search or filters."
-              : "There are no documents in this Knowledge Base yet."}
+              ? "検索または絞り込み条件に一致するドキュメントはありません。"
+              : "このナレッジベースにはまだドキュメントがありません。"}
           </p>
         </div>
       ) : (
@@ -309,13 +295,7 @@ export function KnowledgeBaseDocumentsPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Title</th>
-                  <th>Filename</th>
-                  <th>Source</th>
-                  <th>Version</th>
-                  <th>Ingestion</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th>タイトル</th><th>ファイル名</th><th>登録元</th><th>バージョン</th><th>取込状態</th><th>ステータス</th><th>操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -339,30 +319,30 @@ export function KnowledgeBaseDocumentsPage() {
                   <div className="table-primary">{item.title}</div>
                   <div className="document-card__badges">
                     <DocumentStatusBadge status={item.ingestion_status} />
-                    <Badge tone="neutral">{item.source_type}</Badge>
+                    <Badge tone="neutral">{label(item.source_type)}</Badge>
                   </div>
                 </div>
                 <div className="document-card__meta">
-                  <div>Filename: {item.original_filename ?? "-"}</div>
+                  <div>ファイル名: {item.original_filename ?? "-"}</div>
                   <div>
-                    Version: v{item.version}{" "}
-                    {item.is_latest ? <Badge tone="success">Latest</Badge> : null}
+                    バージョン: v{item.version}{" "}
+                    {item.is_latest ? <Badge tone="success">最新</Badge> : null}
                   </div>
-                  <div>Status: {item.status}</div>
+                  <div>ステータス: {label(item.status)}</div>
                 </div>
                 <div className="row-actions">
                   <Link
                     className="secondary-button secondary-button--link"
                     to={`/knowledge-bases/${knowledgeBaseId}/documents/${item.id}`}
                   >
-                    Detail
+                    詳細
                   </Link>
                   <button
                     className="secondary-button"
                     disabled={item.ingestion_status !== "failed" || retryingId === item.id}
                     onClick={() => void handleRetry(item.id)}
                   >
-                    {retryingId === item.id ? "Retrying..." : "Retry"}
+                    {retryingId === item.id ? "再試行中..." : "再試行"}
                   </button>
                 </div>
               </article>
@@ -371,7 +351,7 @@ export function KnowledgeBaseDocumentsPage() {
 
           <div className="pagination-bar">
             <div>
-              Page {response?.page} / {response?.total_pages} · Total {response?.total}
+              ページ {response?.page} / {response?.total_pages} · 全{response?.total}件
             </div>
             <div className="pagination-actions">
               <button
@@ -383,7 +363,7 @@ export function KnowledgeBaseDocumentsPage() {
                   })
                 }
               >
-                Previous
+                前へ
               </button>
               <button
                 className="secondary-button"
@@ -392,7 +372,7 @@ export function KnowledgeBaseDocumentsPage() {
                   updateQuery({ page: String((response?.page ?? 1) + 1) })
                 }
               >
-                Next
+                次へ
               </button>
             </div>
           </div>
@@ -429,29 +409,29 @@ function DocumentRow({
       </td>
       <td>{item.original_filename ?? "-"}</td>
       <td>
-        <Badge tone="neutral">{item.source_type}</Badge>
+        <Badge tone="neutral">{label(item.source_type)}</Badge>
       </td>
       <td>
-        v{item.version} {item.is_latest ? <Badge tone="success">Latest</Badge> : null}
+        v{item.version} {item.is_latest ? <Badge tone="success">最新</Badge> : null}
       </td>
       <td>
         <DocumentStatusBadge status={item.ingestion_status} />
       </td>
-      <td>{item.status}</td>
+      <td>{label(item.status)}</td>
       <td>
         <div className="row-actions">
           <Link
             className="secondary-button secondary-button--link"
             to={`/knowledge-bases/${knowledgeBaseId}/documents/${item.id}`}
           >
-            Detail
+            詳細
           </Link>
           <button
             className="secondary-button"
             disabled={item.ingestion_status !== "failed" || retrying}
             onClick={onRetry}
           >
-            {retrying ? "Retrying..." : "Retry"}
+            {retrying ? "再試行中..." : "再試行"}
           </button>
         </div>
       </td>

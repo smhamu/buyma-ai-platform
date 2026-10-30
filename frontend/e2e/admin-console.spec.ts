@@ -41,29 +41,29 @@ test("Login to restore flow", async ({ page }) => {
     await page.goto("/login");
     await expect(page).toHaveURL(/\/login$/);
 
-    await page.getByLabel("Email").fill(credentials.email);
-    await page.getByLabel("Password").fill(credentials.password);
-    await page.getByRole("button", { name: "Login" }).click();
+    await page.getByLabel("メールアドレス").fill(credentials.email);
+    await page.getByLabel("パスワード").fill(credentials.password);
+    await page.getByRole("button", { name: "ログイン" }).click();
 
     await expect(page).toHaveURL(/\/knowledge-bases$/);
-    await expect(page.getByRole("heading", { name: "Knowledge Bases" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "ナレッジベース" })).toBeVisible();
     const knowledgeBaseCard = page
       .getByRole("heading", { name: kb.name, exact: true })
       .locator("xpath=ancestor::article");
     await expect(knowledgeBaseCard).toBeVisible();
 
-    await knowledgeBaseCard.getByRole("link", { name: "View details" }).click();
+    await knowledgeBaseCard.getByRole("link", { name: "詳細を見る" }).click();
     await expect(page).toHaveURL(new RegExp(`/knowledge-bases/${knowledgeBaseId}$`));
     await expect(page.getByRole("heading", { name: kb.name })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Documents", exact: true })).toBeVisible();
-    await expect(page.getByText("Latest", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "ドキュメント", exact: true })).toBeVisible();
+    await expect(page.getByText("最新ドキュメント", { exact: true })).toBeVisible();
 
-    await page.getByRole("link", { name: "Open Documents" }).click();
+    await page.getByRole("link", { name: "ドキュメントを開く" }).click();
     await expect(page).toHaveURL(
       new RegExp(`/knowledge-bases/${knowledgeBaseId}/documents`),
     );
     await expect(
-      page.getByRole("heading", { name: "Documents", exact: true }),
+      page.getByRole("heading", { name: "ドキュメント", exact: true }),
     ).toBeVisible();
 
     await uploadDocument(page, v1Buffer, "buyma-e2e.txt");
@@ -72,12 +72,12 @@ test("Login to restore flow", async ({ page }) => {
     const latestRow = desktopTable.locator("tbody tr").first();
 
     await expect(latestRow).toContainText("buyma-e2e.txt");
-    await expect(latestRow).toContainText(/Pending|Processing|Ready/);
+    await expect(latestRow).toContainText(/処理待ち|処理中|準備完了/);
     await expect
       .poll(async () => (await latestRow.textContent()) ?? "", {
         timeout: 60_000,
       })
-      .toMatch(/Ready/);
+      .toMatch(/準備完了/);
 
     await uploadDocument(page, v2Buffer, "buyma-e2e.txt");
 
@@ -86,55 +86,55 @@ test("Login to restore flow", async ({ page }) => {
         timeout: 60_000,
       })
       .toMatch(/v2/);
-    await expect(latestRow).toContainText("Latest");
+    await expect(latestRow).toContainText("最新");
     await expect
       .poll(async () => (await latestRow.textContent()) ?? "", {
         timeout: 60_000,
       })
-      .toMatch(/Ready/);
+      .toMatch(/準備完了/);
 
-    await latestRow.getByRole("link", { name: "Detail" }).click();
+    await latestRow.getByRole("link", { name: "詳細" }).click();
 
     await expect(page).toHaveURL(
       new RegExp(`/knowledge-bases/${knowledgeBaseId}/documents/`),
     );
     await expect(page.getByRole("heading", { name: /buyma-e2e/i })).toBeVisible();
     const overview = page
-      .getByRole("heading", { name: "Overview" })
+      .getByRole("heading", { name: "概要" })
       .locator("xpath=ancestor::div[contains(@class, 'panel')]");
     const overviewValues = overview.locator(".detail-row__value");
     await expect(overviewValues.getByText("buyma-e2e.txt", { exact: true })).toBeVisible();
     await expect(overviewValues.getByText("v2", { exact: true })).toBeVisible();
-    await expect(overviewValues.getByText("Latest", { exact: true })).toBeVisible();
-    await expect(overviewValues.getByText("Ready", { exact: true })).toBeVisible();
+    await expect(overviewValues.getByText("最新", { exact: true })).toBeVisible();
+    await expect(overviewValues.getByText("準備完了", { exact: true })).toBeVisible();
 
     const v2Card = page.locator(".version-item").filter({ hasText: "v2" }).first();
     const v1Card = page.locator(".version-item").filter({ hasText: "v1" }).first();
 
-    await expect(v2Card).toContainText("Latest");
+    await expect(v2Card).toContainText("最新");
     await expect(v1Card).toBeVisible();
-    await expect(v2Card.getByRole("button", { name: "Restore" })).toBeDisabled();
-    await expect(v1Card.getByRole("button", { name: "Diff" })).toBeEnabled();
-    await expect(v1Card.getByRole("button", { name: "Restore" })).toBeEnabled();
+    await expect(v2Card.getByRole("button", { name: "復元" })).toBeDisabled();
+    await expect(v1Card.getByRole("button", { name: "差分" })).toBeEnabled();
+    await expect(v1Card.getByRole("button", { name: "復元" })).toBeEnabled();
 
-    await v1Card.getByRole("button", { name: "Diff" }).click();
-    await expect(page.getByRole("heading", { name: "Version Diff" })).toBeVisible();
-    await expect(page.getByText(/Current v2 vs Compare v1/)).toBeVisible();
-    await expect(page.getByText(/Added\s*\d+/)).toBeVisible();
-    await expect(page.getByText(/Removed\s*\d+/)).toBeVisible();
+    await v1Card.getByRole("button", { name: "差分" }).click();
+    await expect(page.getByRole("heading", { name: "バージョン差分" })).toBeVisible();
+    await expect(page.getByText(/現在 v2.*比較対象 v1/)).toBeVisible();
+    await expect(page.getByText(/追加\s*\d+/)).toBeVisible();
+    await expect(page.getByText(/削除\s*\d+/)).toBeVisible();
     await expect
       .poll(() => page.locator(".diff-line").count(), { timeout: 10_000 })
       .toBeGreaterThan(0);
 
-    await v1Card.getByRole("button", { name: "Restore" }).click();
+    await v1Card.getByRole("button", { name: "復元" }).click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toContainText("Restore version 1?");
-    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(dialog).toContainText("バージョン1を復元しますか？");
+    await dialog.getByRole("button", { name: "キャンセル" }).click();
     await expect(dialog).toBeHidden();
 
-    await v1Card.getByRole("button", { name: "Restore" }).click();
-    await expect(dialog).toContainText("Restore version 1?");
-    await dialog.getByRole("button", { name: "Restore" }).click();
+    await v1Card.getByRole("button", { name: "復元" }).click();
+    await expect(dialog).toContainText("バージョン1を復元しますか？");
+    await dialog.getByRole("button", { name: "復元" }).click();
 
     await expect
       .poll(
@@ -145,14 +145,14 @@ test("Login to restore flow", async ({ page }) => {
           ),
         { timeout: 60_000 },
       )
-      .toMatch(/v3\s*Latest/);
+      .toMatch(/v3\s*最新/);
 
     await expect
       .poll(
         async () => {
           await page.reload();
           await expect(
-            page.getByRole("heading", { name: "Version History" }),
+            page.getByRole("heading", { name: "バージョン履歴" }),
           ).toBeVisible();
           return (
             (await page.locator(".version-item").filter({ hasText: "v3" }).first().textContent()) ??
@@ -161,7 +161,7 @@ test("Login to restore flow", async ({ page }) => {
         },
         { timeout: 60_000, intervals: [1_000, 2_000, 5_000] },
       )
-      .toMatch(/Ready/);
+      .toMatch(/準備完了/);
 
     const historyText = (
       await page.locator(".version-list").textContent()
@@ -202,13 +202,13 @@ test("Direct access to another user's Knowledge Base shows not found", async ({
     ownerKbId = ownerKb.id;
 
     await page.goto("/login");
-    await page.getByLabel("Email").fill(viewer.email);
-    await page.getByLabel("Password").fill(viewer.password);
-    await page.getByRole("button", { name: "Login" }).click();
+    await page.getByLabel("メールアドレス").fill(viewer.email);
+    await page.getByLabel("パスワード").fill(viewer.password);
+    await page.getByRole("button", { name: "ログイン" }).click();
     await expect(page).toHaveURL(/\/knowledge-bases$/);
 
     await page.goto(`/knowledge-bases/${ownerKbId}`);
-    await expect(page.getByText("Knowledge Base not found")).toBeVisible();
+    await expect(page.getByText("ナレッジベースが見つかりません")).toBeVisible();
   } finally {
     if (ownerToken && ownerKbId) {
       await deleteKnowledgeBase(api, ownerToken, ownerKbId);
@@ -222,15 +222,16 @@ async function uploadDocument(
   buffer: Buffer,
   filename: string,
 ) {
-  await page.getByRole("button", { name: "Upload Document" }).click();
+  await page.getByRole("button", { name: "ドキュメントをアップロード" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
+  await dialog.getByRole("combobox", { name: "埋め込みモデル" }).selectOption({ index: 1 });
   await dialog.locator('input[type="file"]').setInputFiles({
     name: filename,
     mimeType: "text/plain",
     buffer,
   });
-  await expect(dialog.getByRole("button", { name: "Upload", exact: true })).toBeEnabled();
-  await dialog.getByRole("button", { name: "Upload", exact: true }).click();
+  await expect(dialog.getByRole("button", { name: "アップロード", exact: true })).toBeEnabled();
+  await dialog.getByRole("button", { name: "アップロード", exact: true }).click();
   await expect(dialog).toBeHidden();
 }

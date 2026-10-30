@@ -35,7 +35,7 @@ export function SupplierPolicyEvidencePanel({supplier,onClose}:{supplier:Supplie
     try {
       const [nextHistory,nextSummary]=await Promise.all([fetchPolicyEvidence(supplier.id,page,pageSize),fetchLatestPolicyEvidence(supplier.id)]);
       setHistory(nextHistory);setSummary(nextSummary);setError("");
-    } catch(e) {setError(e instanceof Error?e.message:"Failed to load policy evidence.");}
+    } catch(e) {setError(e instanceof Error?e.message:"ポリシー根拠を読み込めませんでした。" );}
     finally {setLoading(false);}
   },[page,pageSize,supplier.id]);
   useEffect(()=>{void load();},[load]);
@@ -43,36 +43,36 @@ export function SupplierPolicyEvidencePanel({supplier,onClose}:{supplier:Supplie
   const submit=async(e:FormEvent)=>{
     e.preventDefault();setSaving(true);setError("");
     try {await createPolicyEvidence(supplier.id,form);setForm(initialInput());setPage(1);await load();}
-    catch(x){setError(x instanceof Error?x.message:"Failed to add evidence.");}
+    catch(x){setError(x instanceof Error?x.message:"根拠を追加できませんでした。" );}
     finally{setSaving(false);}
   };
-  return <div className="modal-backdrop"><section className="modal-panel research-form" aria-label="Policy Evidence">
-    <div className="modal-panel__header"><div><h2>Policy Evidence</h2><p>{supplier.name}</p></div><button className="secondary-button" onClick={onClose}>Close</button></div>
-    <p className="subtle">Evidence records why a policy was researched. Adding evidence does not automatically change the supplier policy.</p>
+  return <div className="modal-backdrop"><section className="modal-panel research-form" aria-label="ポリシー根拠">
+    <div className="modal-panel__header"><div><h2>ポリシー根拠</h2><p>{supplier.name}</p></div><button className="secondary-button" onClick={onClose}>閉じる</button></div>
+    <p className="subtle">ポリシーを調査した根拠を記録します。根拠を追加しても仕入先ポリシーは自動変更されません。</p>
     {error&&<div className="form-error-banner">{error}</div>}
-    <section aria-label="Latest policy evidence"><h3>Latest Evidence</h3>
-      {loading&&!summary?<div className="page-status">Loading policy evidence...</div>:summary&&<div className="stats-grid">
+    <section aria-label="最新のポリシー根拠"><h3>最新の根拠</h3>
+      {loading&&!summary?<div className="page-status">ポリシー根拠を読み込み中...</div>:summary&&<div className="stats-grid">
         {Object.entries(summary).map(([type,item])=><article className="stat-card" key={type}>
-          <strong>{label(type)}</strong><div>Current Policy: {label(String(item.current))}</div><div>Latest Evidence: {item.latest_evidence?label(item.latest_evidence):"No evidence"}</div>
-          {item.checked_at&&<div>Checked: {new Date(item.checked_at).toLocaleDateString()} ({item.age_days} days ago)</div>}
-          <div>{item.consistent===true?"Up to date":item.consistent===false?"Review required":"No evidence"}</div>
-          {item.is_stale===true&&<div>Review recommended</div>}
+          <strong>{label(type)}</strong><div>現在のポリシー: {label(String(item.current))}</div><div>最新の根拠: {item.latest_evidence?label(item.latest_evidence):"根拠未登録"}</div>
+          {item.checked_at&&<div>確認日: {new Date(item.checked_at).toLocaleDateString("ja-JP")}（{item.age_days}日前）</div>}
+          <div>{item.consistent===true?"最新":item.consistent===false?"要確認":"根拠未登録"}</div>
+          {item.is_stale===true&&<div>再確認を推奨</div>}
         </article>)}
       </div>}
     </section>
-    <form aria-label="Add policy evidence" onSubmit={(e)=>void submit(e)}><h3>Add Evidence</h3>
+    <form aria-label="ポリシー根拠を追加" onSubmit={(e)=>void submit(e)}><h3>根拠を追加</h3>
       <div className="form-grid">
-        <label className="form-field">Evidence Type<select className="form-field__input" value={form.evidence_type} onChange={(e)=>{const type=e.target.value as EvidenceType;setForm(current=>({...current,evidence_type:type,result:evidenceResultsByType[type][0]}));}}>{evidenceTypes.map(x=><option key={x} value={x}>{label(x)}</option>)}</select></label>
-        <label className="form-field">Result<select className="form-field__input" value={form.result} onChange={(e)=>field("result",e.target.value as EvidenceResult)}>{evidenceResultsByType[form.evidence_type].map(x=><option key={x} value={x}>{label(x)}</option>)}</select></label>
-        <label className="form-field">Source URL<input className="form-field__input" type="url" maxLength={2048} value={form.source_url??""} onChange={(e)=>field("source_url",e.target.value||null)}/></label>
-        <label className="form-field">Checked At<input className="form-field__input" type="datetime-local" value={form.checked_at.slice(0,16)} onChange={(e)=>field("checked_at",new Date(e.target.value).toISOString())} required/></label>
+        <label className="form-field">根拠種別<select className="form-field__input" value={form.evidence_type} onChange={(e)=>{const type=e.target.value as EvidenceType;setForm(current=>({...current,evidence_type:type,result:evidenceResultsByType[type][0]}));}}>{evidenceTypes.map(x=><option key={x} value={x}>{label(x)}</option>)}</select></label>
+        <label className="form-field">結果<select className="form-field__input" value={form.result} onChange={(e)=>field("result",e.target.value as EvidenceResult)}>{evidenceResultsByType[form.evidence_type].map(x=><option key={x} value={x}>{label(x)}</option>)}</select></label>
+        <label className="form-field">出典URL<input className="form-field__input" type="url" maxLength={2048} value={form.source_url??""} onChange={(e)=>field("source_url",e.target.value||null)}/></label>
+        <label className="form-field">確認日時<input className="form-field__input" type="datetime-local" value={form.checked_at.slice(0,16)} onChange={(e)=>field("checked_at",new Date(e.target.value).toISOString())} required/></label>
       </div>
-      <label className="form-field">Notes<textarea className="form-field__input" maxLength={4000} value={form.evidence_notes} onChange={(e)=>field("evidence_notes",e.target.value)} required/></label>
-      <div className="subtle">Checked By: current authenticated user</div>
-      <button className="primary-button" disabled={saving}>{saving?"Adding...":"Add Evidence"}</button>
+      <label className="form-field">メモ<textarea className="form-field__input" maxLength={4000} value={form.evidence_notes} onChange={(e)=>field("evidence_notes",e.target.value)} required/></label>
+      <div className="subtle">確認者: 現在ログイン中のユーザー</div>
+      <button className="primary-button" disabled={saving}>{saving?"追加中...":"根拠を追加"}</button>
     </form>
-    <section aria-label="Evidence history"><h3>Evidence History</h3>
-      {!loading&&!history?.items.length?<div className="panel panel--empty">No policy evidence recorded.</div>:history&&<><div className="table-wrapper"><table className="data-table"><thead><tr><th>Type</th><th>Result</th><th>Source</th><th>Checked At</th><th>Checked By</th><th>Notes</th></tr></thead><tbody>{history.items.map(item=><tr key={item.id}><td>{label(item.evidence_type)}</td><td>{label(item.result)}</td><td>{item.source_url?<a href={item.source_url} target="_blank" rel="noopener noreferrer">Source</a>:"-"}</td><td>{new Date(item.checked_at).toLocaleString()}</td><td>{item.checked_by_username}</td><td>{item.evidence_notes}</td></tr>)}</tbody></table></div><Pagination page={history} onPage={setPage} onPageSize={(size)=>{setPageSize(size);setPage(1);}}/></>}
+    <section aria-label="根拠履歴"><h3>根拠履歴</h3>
+      {!loading&&!history?.items.length?<div className="panel panel--empty">ポリシー根拠は登録されていません。</div>:history&&<><div className="table-wrapper"><table className="data-table"><thead><tr><th>種別</th><th>結果</th><th>出典</th><th>確認日時</th><th>確認者</th><th>メモ</th></tr></thead><tbody>{history.items.map(item=><tr key={item.id}><td>{label(item.evidence_type)}</td><td>{label(item.result)}</td><td>{item.source_url?<a href={item.source_url} target="_blank" rel="noopener noreferrer">出典</a>:"-"}</td><td>{new Date(item.checked_at).toLocaleString("ja-JP")}</td><td>{item.checked_by_username}</td><td>{item.evidence_notes}</td></tr>)}</tbody></table></div><Pagination page={history} onPage={setPage} onPageSize={(size)=>{setPageSize(size);setPage(1);}}/></>}
     </section>
   </section></div>;
 }

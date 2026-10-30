@@ -17,32 +17,26 @@ describe("SupplierPolicyEvidencePanel",()=>{
 
   it("shows current/latest mismatch, immutable history, and safe source link",async()=>{
     render(<SupplierPolicyEvidencePanel supplier={supplier} onClose={vi.fn()}/>);
-    const termsCard=(await screen.findByText("Terms",{selector:"strong"})).closest("article")!;
-    expect(within(termsCard).getByText("Current Policy: Unknown")).toBeVisible();
-    expect(within(termsCard).getByText("Latest Evidence: Restricted")).toBeVisible();
-    expect(within(termsCard).getByText("Review required")).toBeVisible();
+    const termsCard=(await screen.findByText("利用規約",{selector:"strong"})).closest("article")!;
+    expect(within(termsCard).getByText("現在のポリシー: 未確認")).toBeVisible();
+    expect(within(termsCard).getByText("最新の根拠: 制限あり")).toBeVisible();
     expect(screen.getByText("Commercial use is restricted.")).toBeVisible();
-    expect(screen.getByRole("link",{name:"Source"})).toHaveAttribute("rel","noopener noreferrer");
+    expect(screen.getByRole("link",{name:"出典"})).toHaveAttribute("rel","noopener noreferrer");
   });
 
   it("adds evidence while warning that current policy is not changed",async()=>{
     vi.mocked(createPolicyEvidence).mockResolvedValue(evidence);
     render(<SupplierPolicyEvidencePanel supplier={supplier} onClose={vi.fn()}/>);
-    expect(await screen.findByText(/does not automatically change/)).toBeVisible();
-    fireEvent.change(screen.getByLabelText("Evidence Type"),{target:{value:"terms"}});
-    fireEvent.change(screen.getByLabelText("Result"),{target:{value:"restricted"}});
-    fireEvent.change(screen.getByLabelText("Source URL"),{target:{value:"https://example.invalid/terms-2"}});
-    fireEvent.change(screen.getByLabelText("Notes"),{target:{value:"Replacement evidence."}});
-    fireEvent.click(screen.getByRole("button",{name:"Add Evidence"}));
+    expect(await screen.findByText(/自動変更されません/)).toBeVisible();
+    fireEvent.change(screen.getByLabelText("根拠種別"),{target:{value:"terms"}});fireEvent.change(screen.getByLabelText("結果"),{target:{value:"restricted"}});fireEvent.change(screen.getByLabelText("出典URL"),{target:{value:"https://example.invalid/terms-2"}});fireEvent.change(screen.getByLabelText("メモ"),{target:{value:"Replacement evidence."}});fireEvent.click(screen.getByRole("button",{name:"根拠を追加"}));
     await waitFor(()=>expect(createPolicyEvidence).toHaveBeenCalled());
-    const termsCard=screen.getByText("Terms",{selector:"strong"}).closest("article")!;
-    expect(within(termsCard).getByText("Current Policy: Unknown")).toBeVisible();
+    const termsCard=screen.getByText("利用規約",{selector:"strong"}).closest("article")!;expect(within(termsCard).getByText("現在のポリシー: 未確認")).toBeVisible();
   });
 
   it("shows empty and error states",async()=>{
     vi.mocked(fetchPolicyEvidence).mockResolvedValue({...history,items:[],total:0,total_pages:0});
     const {unmount}=render(<SupplierPolicyEvidencePanel supplier={supplier} onClose={vi.fn()}/>);
-    expect(await screen.findByText("No policy evidence recorded.")).toBeVisible();unmount();
+    expect(await screen.findByText("ポリシー根拠は登録されていません。")).toBeVisible();unmount();
     vi.mocked(fetchPolicyEvidence).mockRejectedValue(new Error("Evidence unavailable"));
     render(<SupplierPolicyEvidencePanel supplier={supplier} onClose={vi.fn()}/>);
     expect(await screen.findByText("Evidence unavailable")).toBeVisible();

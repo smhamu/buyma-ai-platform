@@ -47,7 +47,7 @@ export function DocumentUploadPanel({
           setError(
             err instanceof ApiClientError
               ? err.message
-              : "Failed to load embedding models.",
+              : "埋め込みモデルを読み込めませんでした。",
           );
         }
       } finally {
@@ -72,15 +72,15 @@ export function DocumentUploadPanel({
     setError(null);
 
     if (!file) {
-      setError("Please select a file.");
+      setError("ファイルを選択してください。");
       return;
     }
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      setError("File size must be 10MB or smaller.");
+      setError("ファイルサイズは10MB以下にしてください。");
       return;
     }
     if (!embeddingModelId) {
-      setError("Please select an embedding model.");
+      setError("埋め込みモデルを選択してください。");
       return;
     }
 
@@ -98,7 +98,7 @@ export function DocumentUploadPanel({
       setFile(null);
     } catch (err) {
       setError(
-        err instanceof ApiClientError ? err.message : "Upload failed.",
+        err instanceof ApiClientError ? err.message : "アップロードに失敗しました。",
       );
     } finally {
       setSubmitting(false);
@@ -110,17 +110,16 @@ export function DocumentUploadPanel({
       <div className="modal-panel">
         <div className="modal-panel__header">
           <div>
-            <h2>Upload Document</h2>
-            <p>Upload a PDF, TXT, or Markdown file into this Knowledge Base.</p>
+            <h2>ドキュメントをアップロード</h2><p>PDF、TXT、Markdownファイルをこのナレッジベースへ追加します。</p>
           </div>
           <button className="secondary-button" onClick={onClose} type="button">
-            Close
+            閉じる
           </button>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label className="form-field">
-            <span className="form-field__label">File</span>
+            <span className="form-field__label">ファイル</span>
             <input
               className="form-field__input"
               type="file"
@@ -133,14 +132,14 @@ export function DocumentUploadPanel({
           </label>
 
           <label className="form-field">
-            <span className="form-field__label">Embedding Model</span>
+            <span className="form-field__label">埋め込みモデル</span>
             <select
               className="form-field__input"
               value={embeddingModelId}
               onChange={(event) => setEmbeddingModelId(event.target.value)}
               disabled={loadingModels}
             >
-              <option value="">Select model</option>
+              <option value="">モデルを選択</option>
               {models.map((model) => (
                 <option key={model.id} value={model.id}>
                   {model.model_name} ({model.model_version})
@@ -153,7 +152,7 @@ export function DocumentUploadPanel({
           </label>
 
           <label className="form-field">
-            <span className="form-field__label">Chunk Size</span>
+            <span className="form-field__label">チャンクサイズ</span>
             <input
               className="form-field__input"
               type="number"
@@ -170,13 +169,13 @@ export function DocumentUploadPanel({
               checked={autoEnqueue}
               onChange={(event) => setAutoEnqueue(event.target.checked)}
             />
-            <span>Auto enqueue embedding jobs</span>
+            <span>埋め込みジョブを自動登録</span>
           </label>
 
           {error ? <div className="form-error-banner">{error}</div> : null}
 
           <button className="primary-button" type="submit" disabled={submitting}>
-            {submitting ? "Uploading..." : "Upload"}
+            {submitting ? "アップロード中..." : "アップロード"}
           </button>
         </form>
       </div>

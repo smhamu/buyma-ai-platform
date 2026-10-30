@@ -35,10 +35,10 @@ export function ProductResearchDetailPage() {
     } catch (e) {
       setError(
         e instanceof ApiClientError && e.status === 404
-          ? "Research candidate not found."
+          ? "商品リサーチ候補が見つかりません。"
           : e instanceof Error
             ? e.message
-            : "Failed to load candidate.",
+            : "商品リサーチ候補を読み込めませんでした。",
       );
     } finally {
       setLoading(false);
@@ -48,11 +48,11 @@ export function ProductResearchDetailPage() {
     void load();
   }, [load]);
   if (loading)
-    return <div className="page-status">Loading research candidate...</div>;
+    return <div className="page-status">商品リサーチ候補を読み込み中...</div>;
   if (error || !c)
     return (
       <div className="panel panel--error">
-        <h1>Unable to load candidate</h1>
+        <h1>商品リサーチ候補を読み込めませんでした</h1>
         <p>{error}</p>
       </div>
     );
@@ -61,27 +61,23 @@ export function ProductResearchDetailPage() {
       <div className="page-section__header">
         <div>
           <Link className="text-link" to="/product-research">
-            ← Research Candidates
+            ← 商品リサーチ候補一覧
           </Link>
           <h1>{c.product_name}</h1>
           <p>{b?.brand_name}</p>
         </div>
         <button className="primary-button" onClick={() => setEdit(true)}>
-          Edit Candidate
+          候補を編集
         </button>
       </div>
       <div className="detail-grid">
-        <Section title="Overview">
-          <Row k="Brand" v={b?.brand_name} />
-          <Row k="Product" v={c.product_name} />
-          <Row k="Supplier" v={s?.name} />
-          <Row k="Availability" v={label(c.availability_status)} />
+        <Section title="概要"><Row k="ブランド" v={b?.brand_name} /><Row k="商品" v={c.product_name} /><Row k="仕入先" v={s?.name} /><Row k="在庫状況" v={label(c.availability_status)} />
           <Row
-            k="Purchase restriction"
+            k="購入制限"
             v={<Badge tone={c.purchase_restriction === "normal" ? "success" : "neutral"}>{label(c.purchase_restriction || "unknown")}</Badge>}
           />
           <Row
-            k="Product URL"
+            k="商品URL"
             v={
               <a
                 className="text-link"
@@ -89,32 +85,27 @@ export function ProductResearchDetailPage() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Open supplier product
+                仕入先の商品ページを開く
               </a>
             }
           />
         </Section>
-        <Section title="Purchase Cost">
+        <Section title="仕入費用">
           <Row
-            k="Supplier price"
+            k="仕入価格"
             v={money(c.supplier_price, c.supplier_currency)}
           />
-          <Row k="VAT policy" v={label(c.vat_policy)} />
+          <Row k="VATポリシー" v={label(c.vat_policy)} />
           <Row
-            k="Export price"
+            k="輸出価格"
             v={money(c.export_price, c.supplier_currency)}
           />
-          <Row k="Exchange rate" v={c.exchange_rate} />
-          <Row k="Supplier cost" v={money(c.supplier_cost_jpy)} />
-          <Row k="Shipping" v={money(c.japan_shipping_cost)} />
-          <Row k="Import cost" v={money(c.estimated_import_cost)} />
-          <Row k="Other cost" v={money(c.estimated_other_cost)} />
+          <Row k="為替レート" v={c.exchange_rate} /><Row k="仕入原価" v={money(c.supplier_cost_jpy)} /><Row k="日本向け送料" v={money(c.japan_shipping_cost)} /><Row k="輸入費用" v={money(c.estimated_import_cost)} /><Row k="その他費用" v={money(c.estimated_other_cost)} />
         </Section>
         <Section title="BUYMA">
-          <Row k="BUYMA price" v={money(c.buyma_price)} />
-          <Row k="BUYMA fee" v={money(c.buyma_fee)} />
+          <Row k="BUYMA販売価格" v={money(c.buyma_price)} /><Row k="BUYMA手数料" v={money(c.buyma_fee)} />
           <Row
-            k="Supplier status"
+            k="仕入先ステータス"
             v={
               <Badge
                 tone={
@@ -128,30 +119,28 @@ export function ProductResearchDetailPage() {
             }
           />
         </Section>
-        <Section title="Profit">
-          <Row k="Total cost" v={money(c.total_cost)} />
+        <Section title="利益"><Row k="総費用" v={money(c.total_cost)} />
           <Row
-            k="Profit amount"
+            k="利益額"
             v={`${Number(c.profit_amount) >= 0 ? "+" : ""}${money(c.profit_amount)}`}
           />
-          <Row k="Profit rate" v={percent(c.profit_rate)} />
+          <Row k="利益率" v={percent(c.profit_rate)} />
         </Section>
-        <Section title="Research">
-          <Row k="Status" v={label(c.research_status)} />
+        <Section title="調査"><Row k="ステータス" v={label(c.research_status)} />
           <Row
-            k="Checked"
+            k="確認日時"
             v={
               c.checked_at
-                ? new Date(c.checked_at).toLocaleString()
-                : "Not checked"
+                ? new Date(c.checked_at).toLocaleString("ja-JP")
+                : "未確認"
             }
           />
           <Row
-            k="Online purchase"
-            v={c.online_purchase_available ? "Available" : "Unavailable"}
+            k="オンライン購入"
+            v={c.online_purchase_available ? "購入可能" : "購入不可"}
           />
           {c.vat_policy === "unknown" && (
-            <Row k="VAT note" v="VAT deduction is not assumed." />
+            <Row k="VAT注記" v="VAT控除は利益計算に適用されていません。" />
           )}
         </Section>
       </div>

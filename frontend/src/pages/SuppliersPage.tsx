@@ -75,7 +75,7 @@ export function SuppliersPage() {
       setData(await fetchSuppliers(query));
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load suppliers.");
+      setError(e instanceof Error ? e.message : "仕入先を読み込めませんでした。");
     } finally {
       setLoading(false);
     }
@@ -97,44 +97,43 @@ export function SuppliersPage() {
     setSp(n);
   };
   const remove = async (s: Supplier) => {
-    if (!window.confirm(`Delete ${s.name}?`)) return;
+    if (!window.confirm(`${s.name}を削除しますか？`)) return;
     try {
       await deleteSupplier(s.id);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Delete failed.");
+      setError(e instanceof Error ? e.message : "削除に失敗しました。");
     }
   };
   return (
     <section className="page-section">
       <div className="page-section__header">
         <div>
-          <h1>Suppliers</h1>
-          <p>EU stores, shipping, VAT, and BUYMA purchasing status.</p>
+          <h1>仕入先</h1><p>EU店舗の配送、VAT、BUYMA買付可否を管理します。</p>
         </div>
         <button className="primary-button" onClick={() => setEditing(null)}>
-          Add Supplier
+          仕入先を追加
         </button>
       </div>
       <div className="panel research-toolbar">
         <select
-          aria-label="Country"
+          aria-label="国"
           className="form-field__input"
           value={sp.get("country") || ""}
           onChange={(e) => change("country", e.target.value)}
         >
-          <option value="">All countries</option>
+          <option value="">すべての国</option>
           {["FR", "IT", "DE", "ES", "NL", "BE", "AT", "IE", "PT"].map((x) => (
             <option key={x}>{x}</option>
           ))}
         </select>
         <select
-          aria-label="Supplier type"
+          aria-label="仕入先種別"
           className="form-field__input"
           value={sp.get("type") || ""}
           onChange={(e) => change("type", e.target.value)}
         >
-          <option value="">All types</option>
+          <option value="">すべての種別</option>
           {[
             "authorized_retailer",
             "department_store",
@@ -149,33 +148,31 @@ export function SuppliersPage() {
           ))}
         </select>
         <select
-          aria-label="Ships to Japan"
+          aria-label="日本への配送"
           className="form-field__input"
           value={sp.get("ships") || ""}
           onChange={(e) => change("ships", e.target.value)}
         >
-          <option value="">Any shipping</option>
-          <option value="true">Ships to Japan</option>
-          <option value="false">Does not ship</option>
+          <option value="">すべての配送条件</option><option value="true">日本へ配送可</option><option value="false">日本へ配送不可</option>
         </select>
         <select
-          aria-label="BUYMA status"
+          aria-label="BUYMAステータス"
           className="form-field__input"
           value={sp.get("buyma") || ""}
           onChange={(e) => change("buyma", e.target.value)}
         >
-          <option value="">All BUYMA statuses</option>
+          <option value="">すべてのBUYMAステータス</option>
           {["unchecked", "allowed", "caution", "prohibited"].map((x) => (
-            <option key={x}>{x}</option>
+            <option key={x} value={x}>{label(x)}</option>
           ))}
         </select>
       </div>
       {error && <div className="form-error-banner">{error}</div>}
       {loading ? (
-        <div className="page-status">Loading suppliers...</div>
+        <div className="page-status">仕入先を読み込み中...</div>
       ) : !data?.items.length ? (
         <div className="panel panel--empty">
-          <h2>No suppliers found.</h2>
+          <h2>仕入先がありません</h2>
         </div>
       ) : (
         <div className="panel">
@@ -183,13 +180,9 @@ export function SuppliersPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Supplier</th>
-                  <th>Country</th>
-                  <th>Brands</th>
-                  <th>Shipping</th>
-                  <th>VAT</th>
+                  <th>仕入先</th><th>国</th><th>ブランド</th><th>配送</th><th>VAT</th>
                   <th>BUYMA</th>
-                  <th>Actions</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,8 +207,8 @@ export function SuppliersPage() {
                     </td>
                     <td>
                       {s.ships_to_japan
-                        ? "Ships to Japan"
-                        : "No Japan shipping"}
+                        ? "日本へ配送可"
+                        : "日本へ配送不可"}
                     </td>
                     <td>{label(s.vat_policy)}</td>
                     <td>
@@ -239,25 +232,25 @@ export function SuppliersPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          Website
+                          Webサイト
                         </a>
                         <button
                           className="secondary-button"
                           onClick={() => setEvidenceSupplier(s)}
                         >
-                          Policy Evidence
+                          ポリシー根拠
                         </button>
                         <button
                           className="secondary-button"
                           onClick={() => setEditing(s)}
                         >
-                          Edit
+                          編集
                         </button>
                         <button
                           className="secondary-button"
                           onClick={() => void remove(s)}
                         >
-                          Delete
+                          削除
                         </button>
                       </div>
                     </td>
@@ -306,14 +299,14 @@ function SupplierForm({
   useEffect(() => {
     void fetchBrands({ page_size: 100, is_active: undefined })
       .then((x) => setBrands(x.items))
-      .catch(() => setError("Failed to load brands."));
+      .catch(() => setError("ブランドを読み込めませんでした。"));
   }, []);
   const field = (key: keyof SupplierInput, value: unknown) =>
     setForm({ ...form, [key]: value });
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.website_url) {
-      setError("Name and website URL are required.");
+      setError("名称とWebサイトURLは必須です。");
       return;
     }
     try {
@@ -322,7 +315,7 @@ function SupplierForm({
         : await createSupplier(form);
       onSaved();
     } catch (x) {
-      setError(x instanceof ApiClientError ? x.message : "Save failed.");
+      setError(x instanceof ApiClientError ? x.message : "保存に失敗しました。");
     }
   };
   return (
@@ -332,14 +325,14 @@ function SupplierForm({
         onSubmit={(e) => void submit(e)}
       >
         <div className="modal-panel__header">
-          <h2>{supplier ? "Edit Supplier" : "Add Supplier"}</h2>
+          <h2>{supplier ? "仕入先を編集" : "仕入先を追加"}</h2>
           <button type="button" className="secondary-button" onClick={onClose}>
-            Close
+            閉じる
           </button>
         </div>
         {error && <div className="form-error-banner">{error}</div>}
         <label className="form-field">
-          Name
+          名称
           <input
             className="form-field__input"
             value={form.name}
@@ -347,7 +340,7 @@ function SupplierForm({
           />
         </label>
         <label className="form-field">
-          Website URL
+          WebサイトURL
           <input
             className="form-field__input"
             value={form.website_url}
@@ -356,7 +349,7 @@ function SupplierForm({
         </label>
         <div className="form-grid">
           <label className="form-field">
-            Country
+            国
             <select
               className="form-field__input"
               value={form.country_code}
@@ -370,7 +363,7 @@ function SupplierForm({
             </select>
           </label>
           <label className="form-field">
-            Type
+            種別
             <select
               className="form-field__input"
               value={form.supplier_type}
@@ -384,7 +377,7 @@ function SupplierForm({
                 "other",
                 "unknown",
               ].map((x) => (
-                <option key={x}>{x}</option>
+                <option key={x} value={x}>{label(x)}</option>
               ))}
             </select>
           </label>
@@ -401,7 +394,7 @@ function SupplierForm({
             </select>
           </label>
           <label className="form-field">
-            VAT policy
+            VATポリシー
             <select
               className="form-field__input"
               value={form.vat_policy}
@@ -413,12 +406,12 @@ function SupplierForm({
                 "excluded_for_export",
                 "not_refunded",
               ].map((x) => (
-                <option key={x}>{x}</option>
+                <option key={x} value={x}>{label(x)}</option>
               ))}
             </select>
           </label>
           <label className="form-field">
-            VAT rate
+            VAT率
             <input
               type="number"
               step="0.01"
@@ -428,7 +421,7 @@ function SupplierForm({
             />
           </label>
           <label className="form-field">
-            Japan shipping cost
+            日本向け送料
             <input
               type="number"
               className="form-field__input"
@@ -439,50 +432,50 @@ function SupplierForm({
             />
           </label>
           <label className="form-field">
-            BUYMA status
+            BUYMAステータス
             <select
               className="form-field__input"
               value={form.buyma_allowed_status}
               onChange={(e) => field("buyma_allowed_status", e.target.value)}
             >
               {["unchecked", "allowed", "caution", "prohibited"].map((x) => (
-                <option key={x}>{x}</option>
+                <option key={x} value={x}>{label(x)}</option>
               ))}
             </select>
           </label>
           <label className="form-field">
-            Research status
+            調査ステータス
             <select
               className="form-field__input"
               value={form.research_status}
               onChange={(e) => field("research_status", e.target.value)}
             >
               {["discovered", "reviewing", "approved", "rejected"].map((x) => (
-                <option key={x}>{x}</option>
+                <option key={x} value={x}>{label(x)}</option>
               ))}
             </select>
           </label>
           <label className="form-field">
-            Ingestion source
+            取込ソース
             <select className="form-field__input" value={form.ingestion_source_type} onChange={(e)=>field("ingestion_source_type",e.target.value)}>
-              {["manual","url_manual","csv","official_api","structured_data","html_parser","disabled"].map((x)=><option key={x}>{x}</option>)}
+              {["manual","url_manual","csv","official_api","structured_data","html_parser","disabled"].map((x)=><option key={x} value={x}>{label(x)}</option>)}
             </select>
           </label>
           <label className="form-field">
-            Terms status
+            利用規約ステータス
             <select className="form-field__input" value={form.terms_status} onChange={(e)=>field("terms_status",e.target.value)}>
-              {["unchecked","allowed","restricted","prohibited","unknown"].map((x)=><option key={x}>{x}</option>)}
+              {["unchecked","allowed","restricted","prohibited","unknown"].map((x)=><option key={x} value={x}>{label(x)}</option>)}
             </select>
           </label>
           <label className="form-field">
-            Robots status
+            robots.txtステータス
             <select className="form-field__input" value={form.robots_status} onChange={(e)=>field("robots_status",e.target.value)}>
-              {["unchecked","allowed","restricted","disallowed","unknown"].map((x)=><option key={x}>{x}</option>)}
+              {["unchecked","allowed","restricted","disallowed","unknown"].map((x)=><option key={x} value={x}>{label(x)}</option>)}
             </select>
           </label>
         </div>
         <fieldset className="brand-picker">
-          <legend>Brands</legend>
+          <legend>ブランド</legend>
           {brands.map((b) => (
             <label className="checkbox-field" key={b.id}>
               <input
@@ -499,14 +492,14 @@ function SupplierForm({
               />
               {b.brand_name}
               {!b.is_active || !b.is_research_enabled
-                ? " (inactive/research disabled)"
+                ? "（無効または調査対象外）"
                 : ""}
             </label>
           ))}
         </fieldset>
         <label className="checkbox-field">
           <input type="checkbox" checked={form.automated_fetch_enabled} onChange={(e)=>field("automated_fetch_enabled",e.target.checked)}/>
-          Automated fetch enabled
+          自動取得を有効にする
         </label>
         <label className="checkbox-field">
           <input
@@ -514,7 +507,7 @@ function SupplierForm({
             checked={form.ships_to_japan}
             onChange={(e) => field("ships_to_japan", e.target.checked)}
           />
-          Ships to Japan
+          日本へ配送可
         </label>
         <label className="checkbox-field">
           <input
@@ -522,17 +515,17 @@ function SupplierForm({
             checked={form.is_active}
             onChange={(e) => field("is_active", e.target.checked)}
           />
-          Active
+          有効
         </label>
         <label className="form-field">
-          Notes
+          メモ
           <textarea
             className="form-field__input"
             value={form.notes || ""}
             onChange={(e) => field("notes", e.target.value || null)}
           />
         </label>
-        <button className="primary-button">Save Supplier</button>
+        <button className="primary-button">仕入先を保存</button>
       </form>
     </div>
   );

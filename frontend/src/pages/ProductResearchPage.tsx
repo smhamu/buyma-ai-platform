@@ -56,7 +56,7 @@ export function ProductResearchPage() {
       setError("");
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "Failed to load research candidates.",
+        e instanceof Error ? e.message : "商品リサーチ候補を読み込めませんでした。",
       );
     } finally {
       setLoading(false);
@@ -72,10 +72,10 @@ export function ProductResearchPage() {
     setSp(n);
   };
   const brandName = (id: string) =>
-    brands.find((x) => x.id === id)?.brand_name || "Unknown brand";
+    brands.find((x) => x.id === id)?.brand_name || "不明なブランド";
   const supplier = (id: string) => suppliers.find((x) => x.id === id);
   const remove = async (id: string) => {
-    if (!window.confirm("Delete this research candidate?")) return;
+    if (!window.confirm("この商品リサーチ候補を削除しますか？")) return;
     await deleteCandidate(id);
     await load();
   };
@@ -83,28 +83,27 @@ export function ProductResearchPage() {
     <section className="page-section">
       <div className="page-section__header">
         <div>
-          <h1>Research Candidates</h1>
-          <p>Rank EU luxury products by estimated BUYMA profit.</p>
+          <h1>商品リサーチ候補</h1><p>EUラグジュアリー商品をBUYMAの想定利益で比較します。</p>
         </div>
         <button className="primary-button" onClick={() => setOpen(true)}>
-          Add Candidate
+          候補を追加
         </button>
       </div>
       <div className="panel research-toolbar research-toolbar--wide">
         <input
-          aria-label="Search candidates"
+          aria-label="商品リサーチ候補を検索"
           className="form-field__input"
-          placeholder="Search product or code"
+          placeholder="商品名またはProduct Codeを検索"
           value={sp.get("q") || ""}
           onChange={(e) => change("q", e.target.value)}
         />
         <select
-          aria-label="Brand"
+          aria-label="ブランド"
           className="form-field__input"
           value={sp.get("brand_id") || ""}
           onChange={(e) => change("brand_id", e.target.value)}
         >
-          <option value="">All brands</option>
+          <option value="">すべてのブランド</option>
           {brands.map((x) => (
             <option key={x.id} value={x.id}>
               {x.brand_name}
@@ -112,12 +111,12 @@ export function ProductResearchPage() {
           ))}
         </select>
         <select
-          aria-label="Supplier"
+          aria-label="仕入先"
           className="form-field__input"
           value={sp.get("supplier_id") || ""}
           onChange={(e) => change("supplier_id", e.target.value)}
         >
-          <option value="">All suppliers</option>
+          <option value="">すべての仕入先</option>
           {suppliers.map((x) => (
             <option key={x.id} value={x.id}>
               {x.name}
@@ -130,18 +129,18 @@ export function ProductResearchPage() {
           value={sp.get("country") || ""}
           onChange={(e) => change("country", e.target.value)}
         >
-          <option value="">All countries</option>
+          <option value="">すべての国</option>
           {["FR", "IT", "DE", "ES", "NL", "BE", "AT", "IE", "PT"].map((x) => (
             <option key={x}>{x}</option>
           ))}
         </select>
         <select
-          aria-label="Research status"
+          aria-label="調査ステータス"
           className="form-field__input"
           value={sp.get("status") || ""}
           onChange={(e) => change("status", e.target.value)}
         >
-          <option value="">All statuses</option>
+          <option value="">すべてのステータス</option>
           {[
             "discovered",
             "reviewing",
@@ -154,44 +153,41 @@ export function ProductResearchPage() {
           ))}
         </select>
         <select
-          aria-label="Sort candidates"
+          aria-label="候補の並び順"
           className="form-field__input"
           value={query.sort_by}
           onChange={(e) => change("sort", e.target.value)}
         >
-          <option value="profit_amount">Profit Amount</option>
-          <option value="profit_rate">Profit Rate</option>
-          <option value="checked_at">Checked At</option>
-          <option value="created_at">Created At</option>
+          <option value="profit_amount">利益額</option><option value="profit_rate">利益率</option><option value="checked_at">確認日時</option><option value="created_at">作成日時</option>
         </select>
         <input
-          aria-label="Minimum profit amount"
+          aria-label="最低利益額"
           className="form-field__input"
           type="number"
-          placeholder="Min profit JPY"
+          placeholder="最低利益額（JPY）"
           value={sp.get("min_profit") || ""}
           onChange={(e) => change("min_profit", e.target.value)}
         />
         <input
-          aria-label="Minimum profit rate"
+          aria-label="最低利益率"
           className="form-field__input"
           type="number"
           step="0.01"
-          placeholder="Min rate e.g. 0.15"
+          placeholder="最低利益率（例: 0.15）"
           value={sp.get("min_rate") || ""}
           onChange={(e) => change("min_rate", e.target.value)}
         />
       </div>
       {error && <div className="form-error-banner">{error}</div>}
       {loading ? (
-        <div className="page-status">Loading research candidates...</div>
+        <div className="page-status">商品リサーチ候補を読み込み中...</div>
       ) : !data?.items.length ? (
         <div className="panel panel--empty">
-          <h2>No research candidates found.</h2>
+          <h2>商品リサーチ候補がありません</h2>
           <p>
             {sp.toString()
-              ? "No candidates match the current filters."
-              : "Add a product to begin profitability research."}
+              ? "現在の絞り込み条件に一致する候補はありません。"
+              : "商品を追加して利益調査を開始してください。"}
           </p>
         </div>
       ) : (
@@ -200,13 +196,7 @@ export function ProductResearchPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Brand / Product</th>
-                  <th>Supplier</th>
-                  <th>Supplier Price</th>
-                  <th>BUYMA Price</th>
-                  <th>Profit</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th>ブランド／商品</th><th>仕入先</th><th>仕入価格</th><th>BUYMA販売価格</th><th>利益</th><th>ステータス</th><th>操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -220,7 +210,7 @@ export function ProductResearchPage() {
                         <div>{c.product_name}</div>
                       </td>
                       <td>
-                        {s?.name || "Unknown"}
+                        {s?.name || "不明"}
                         <div className="subtle">{s?.country_code}</div>
                       </td>
                       <td>{money(c.supplier_price, c.supplier_currency)}</td>
@@ -249,13 +239,13 @@ export function ProductResearchPage() {
                             className="secondary-button secondary-button--link"
                             to={`/product-research/${c.id}`}
                           >
-                            Detail
+                            詳細
                           </Link>
                           <button
                             className="secondary-button"
                             onClick={() => void remove(c.id)}
                           >
-                            Delete
+                            削除
                           </button>
                         </div>
                       </td>
@@ -281,7 +271,7 @@ export function ProductResearchPage() {
                   className="secondary-button secondary-button--link"
                   to={`/product-research/${c.id}`}
                 >
-                  Detail
+                  詳細
                 </Link>
               </article>
             ))}

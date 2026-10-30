@@ -10,13 +10,13 @@ export function VersionDiffPanel({
   error: string | null;
 }) {
   if (loading) {
-    return <div className="panel">Loading diff...</div>;
+    return <div className="panel">差分を読み込み中...</div>;
   }
 
   if (error) {
     return (
       <div className="panel panel--error">
-        <h3>Failed to load diff</h3>
+        <h3>差分を読み込めませんでした</h3>
         <p>{error}</p>
       </div>
     );
@@ -25,8 +25,7 @@ export function VersionDiffPanel({
   if (!diff) {
     return (
       <div className="panel panel--empty">
-        <h3>Version Diff</h3>
-        <p>Select a version to compare with the current document.</p>
+        <h3>バージョン差分</h3><p>現在のドキュメントと比較するバージョンを選択してください。</p>
       </div>
     );
   }
@@ -35,25 +34,25 @@ export function VersionDiffPanel({
     <div className="panel">
       <div className="page-section__header">
         <div>
-          <h3>Version Diff</h3>
+          <h3>バージョン差分</h3>
           <p>
-            Current v{diff.base_version} vs Compare v{diff.compare_version}
+            現在 v{diff.base_version} ／ 比較対象 v{diff.compare_version}
           </p>
         </div>
         <div className="diff-stats">
-          <span className="diff-pill diff-pill--added">Added {diff.added_count}</span>
+          <span className="diff-pill diff-pill--added">追加 {diff.added_count}</span>
           <span className="diff-pill diff-pill--removed">
-            Removed {diff.removed_count}
+            削除 {diff.removed_count}
           </span>
         </div>
       </div>
 
       {!diff.has_changes ? (
         <div className="panel panel--empty">
-          <p>No changes between the selected versions.</p>
+          <p>選択したバージョン間に変更はありません。</p>
         </div>
       ) : (
-        <div className="diff-view" role="region" aria-label="Document version diff">
+        <div className="diff-view" role="region" aria-label="ドキュメントのバージョン差分">
           <pre className="diff-code">
             {diff.lines.map((line, index) => {
               const prefix =

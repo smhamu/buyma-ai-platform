@@ -45,6 +45,8 @@ let accessTokenProvider: TokenProvider = () => null;
 let refreshHandler: RefreshHandler = async () => null;
 let unauthorizedHandler: UnauthorizedHandler = () => undefined;
 
+const ERROR_MESSAGES:Record<string,string>={CATEGORY_PURCHASE_RESTRICTED:"このカテゴリは購入制限の対象です。",PRODUCT_PURCHASE_RESTRICTED:"この商品は購入制限の対象です。",SUPPLIER_PROHIBITED:"この仕入先はBUYMAの買付先として利用できません。",SUPPLIER_DOES_NOT_SHIP_TO_JAPAN:"この仕入先は日本へ配送していません。",ONLINE_PURCHASE_UNAVAILABLE:"オンラインで購入できない商品です。",PRODUCT_OUT_OF_STOCK:"商品は在庫切れです。",SOURCE_IN_USE:"候補へ変換済みの取込ソースは削除できません。",SOURCE_ALREADY_CONVERTED:"この取込ソースには既に候補が作成されています。"};
+
 export function configureApiClient(config: {
   getAccessToken: TokenProvider;
   refreshAccessToken: RefreshHandler;
@@ -94,7 +96,7 @@ async function request<T>(
     throw new ApiClientError(
       response.status,
       error.code || "UNKNOWN_ERROR",
-      error.message || "Request failed.",
+      ERROR_MESSAGES[error.code] || error.message || "リクエストに失敗しました。",
       error.errors,
     );
   }

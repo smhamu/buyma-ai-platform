@@ -20,7 +20,7 @@ describe("KnowledgeBaseListPage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("No Knowledge Bases yet")).toBeInTheDocument();
+      expect(screen.getByText("ナレッジベースはまだありません")).toBeInTheDocument();
     });
   });
 

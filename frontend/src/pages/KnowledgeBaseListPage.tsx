@@ -27,7 +27,7 @@ export function KnowledgeBaseListPage() {
           setError(
             err instanceof ApiClientError
               ? err.message
-              : "Failed to load Knowledge Bases.",
+              : "ナレッジベースを読み込めませんでした。",
           );
         }
       } finally {
@@ -45,13 +45,13 @@ export function KnowledgeBaseListPage() {
   }, []);
 
   if (isLoading) {
-    return <div className="page-status">Loading Knowledge Bases...</div>;
+    return <div className="page-status">ナレッジベースを読み込み中...</div>;
   }
 
   if (error) {
     return (
       <div className="panel panel--error">
-        <h2>Failed to load Knowledge Bases</h2>
+        <h2>ナレッジベースを読み込めませんでした</h2>
         <p>{error}</p>
       </div>
     );
@@ -60,10 +60,9 @@ export function KnowledgeBaseListPage() {
   if (items.length === 0) {
     return (
       <div className="panel panel--empty">
-        <h2>No Knowledge Bases yet</h2>
+        <h2>ナレッジベースはまだありません</h2>
         <p>
-          No Knowledge Bases are available for this account. Once they are created
-          on the backend, they will appear here.
+          利用可能なナレッジベースが作成されると、ここに表示されます。
         </p>
       </div>
     );
@@ -73,8 +72,7 @@ export function KnowledgeBaseListPage() {
     <section className="page-section">
       <div className="page-section__header">
         <div>
-          <h1>Knowledge Bases</h1>
-          <p>Review the Knowledge Bases available to your account.</p>
+          <h1>ナレッジベース</h1><p>利用可能なナレッジベースを確認できます。</p>
         </div>
       </div>
 
@@ -84,14 +82,14 @@ export function KnowledgeBaseListPage() {
             <div className="kb-card__header">
               <h2 className="kb-card__title">{item.name}</h2>
               <Badge tone={item.is_active ? "success" : "muted"}>
-                {item.is_active ? "Active" : "Inactive"}
+                {item.is_active ? "有効" : "無効"}
               </Badge>
             </div>
             <p className="kb-card__description">
-              {item.description || "No description provided."}
+              {item.description || "説明はありません。"}
             </p>
             <Link className="text-link" to={`/knowledge-bases/${item.id}`}>
-              View details
+              詳細を見る
             </Link>
           </article>
         ))}

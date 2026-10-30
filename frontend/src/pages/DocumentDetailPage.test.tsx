@@ -80,7 +80,7 @@ describe("DocumentDetailPage", () => {
         screen.getByRole("heading", { name: "Current Rule" }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("heading", { name: "Version History" }),
+          screen.getByRole("heading", { name: "バージョン履歴" }),
       ).toBeInTheDocument();
       expect(screen.getAllByText("rule-v2.txt").length).toBeGreaterThan(0);
       expect(screen.getAllByText("rule-v1.txt").length).toBeGreaterThan(0);
@@ -111,7 +111,7 @@ describe("DocumentDetailPage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Document not found")).toBeInTheDocument();
+      expect(screen.getByText("ドキュメントが見つかりません")).toBeInTheDocument();
     });
   });
 
@@ -156,14 +156,13 @@ describe("DocumentDetailPage", () => {
       ).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Diff" })[1]);
+    fireEvent.click(screen.getAllByRole("button", { name: "差分" })[1]);
 
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "Version Diff" }),
+        screen.getByRole("heading", { name: "バージョン差分" }),
       ).toBeInTheDocument();
-      expect(screen.getByText(/Added\s*1/)).toBeInTheDocument();
-      expect(screen.getByText(/Removed\s*1/)).toBeInTheDocument();
+      expect(screen.getByText(/追加\s*1/)).toBeInTheDocument();expect(screen.getByText(/削除\s*1/)).toBeInTheDocument();
     });
   });
 
@@ -205,11 +204,11 @@ describe("DocumentDetailPage", () => {
       ).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Diff" })[1]);
+    fireEvent.click(screen.getAllByRole("button", { name: "差分" })[1]);
 
     await waitFor(() => {
       expect(
-        screen.getByText("No changes between the selected versions."),
+        screen.getByText("選択したバージョン間に変更はありません。"),
       ).toBeInTheDocument();
     });
   });
@@ -269,14 +268,14 @@ describe("DocumentDetailPage", () => {
       ).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Restore" })[1]);
+    fireEvent.click(screen.getAllByRole("button", { name: "復元" })[1]);
 
     await waitFor(() => {
-      expect(screen.getByText("Restore version 1?")).toBeInTheDocument();
+      expect(screen.getByText("バージョン1を復元しますか？")).toBeInTheDocument();
     });
 
     const dialog = screen.getByRole("dialog");
-    fireEvent.click(within(dialog).getByRole("button", { name: "Restore" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "復元" }));
 
     await waitFor(() => {
       expect(restoreDocumentVersion).toHaveBeenCalledWith("doc-1");

@@ -12,6 +12,7 @@ import { fetchBrands } from "../modules/brands/api";
 import type { Brand } from "../modules/brands/types";
 import { fetchProductCategories } from "../modules/product-categories/api";
 import type { ProductCategory } from "../modules/product-categories/types";
+import { label } from "../modules/product-research/format";
 import {
   createCandidateFromSource,
   deleteResearchSource,
@@ -57,7 +58,7 @@ export function ResearchIngestionPage() {
       setError("");
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "Failed to load research sources.",
+        e instanceof Error ? e.message : "リサーチ元データを読み込めませんでした。",
       );
     } finally {
       setLoading(false);
@@ -76,43 +77,42 @@ export function ResearchIngestionPage() {
     setSp(n);
   };
   const supplierName = (id: string) =>
-    suppliers.find((x) => x.id === id)?.name || "Unknown";
+    suppliers.find((x) => x.id === id)?.name || "不明";
   const brandName = (id: string | null) =>
-    brands.find((x) => x.id === id)?.brand_name || "Unmatched";
+    brands.find((x) => x.id === id)?.brand_name || "未照合";
   return (
     <section className="page-section">
       <div className="page-section__header">
         <div>
-          <h1>Research Ingestion</h1>
+          <h1>リサーチ取込</h1>
           <p>
-            Register external product evidence without automatically fetching
-            supplier websites.
+            外部サイトへ自動アクセスせず、商品情報の根拠を登録します。
           </p>
         </div>
         <div className="row-actions">
           <button className="secondary-button" onClick={() => setCsvOpen(true)}>
-            CSV Import
+            CSV取込
           </button>
           <button className="primary-button" onClick={() => setUrlOpen(true)}>
-            Add URL
+            URLを追加
           </button>
         </div>
       </div>
       <div className="panel research-toolbar">
         <input
-          aria-label="Search sources"
+          aria-label="取込データを検索"
           className="form-field__input"
           value={sp.get("q") || ""}
           onChange={(e) => change("q", e.target.value)}
-          placeholder="Product, ID, or URL"
+          placeholder="商品名、ID、URL"
         />
         <select
-          aria-label="Source type"
+          aria-label="取込種別"
           className="form-field__input"
           value={sp.get("source_type") || ""}
           onChange={(e) => change("source_type", e.target.value)}
         >
-          <option value="">All source types</option>
+          <option value="">すべての取込種別</option>
           {[
             "url_manual",
             "csv",
@@ -120,16 +120,16 @@ export function ResearchIngestionPage() {
             "structured_data",
             "html_parser",
           ].map((x) => (
-            <option key={x}>{x}</option>
+            <option key={x} value={x}>{label(x)}</option>
           ))}
         </select>
         <select
-          aria-label="Processing status"
+          aria-label="処理ステータス"
           className="form-field__input"
           value={sp.get("processing_status") || ""}
           onChange={(e) => change("processing_status", e.target.value)}
         >
-          <option value="">All statuses</option>
+          <option value="">すべてのステータス</option>
           {[
             "pending",
             "fetched",
@@ -139,17 +139,16 @@ export function ResearchIngestionPage() {
             "rejected",
             "failed",
           ].map((x) => (
-            <option key={x}>{x}</option>
+            <option key={x} value={x}>{label(x)}</option>
           ))}
         </select>
       </div>
       {error && <div className="form-error-banner">{error}</div>}
       {loading ? (
-        <div className="page-status">Loading research sources...</div>
+        <div className="page-status">リサーチ元データを読み込み中...</div>
       ) : !data?.items.length ? (
         <div className="panel panel--empty">
-          <h2>No source products found.</h2>
-          <p>Add a URL or import a CSV file to begin.</p>
+          <h2>取込済みの商品はありません</h2><p>URLを登録するか、CSVファイルを取り込んでください。</p>
         </div>
       ) : (
         <div className="panel">
@@ -157,16 +156,7 @@ export function ResearchIngestionPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Source</th>
-                  <th>Supplier</th>
-                  <th>Brand</th>
-                  <th>Product</th>
-                  <th>Price</th>
-                  <th>Status</th>
-                  <th>Restriction</th>
-                  <th>Candidate</th>
-                  <th>Created</th>
-                  <th>Actions</th>
+                  <th>取込元</th><th>仕入先</th><th>ブランド</th><th>商品</th><th>価格</th><th>ステータス</th><th>購入制限</th><th>候補</th><th>作成日時</th><th>操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -187,7 +177,7 @@ export function ResearchIngestionPage() {
                     <td>
                       {x.normalized_title ||
                         x.raw_title ||
-                        "Pending manual entry"}
+                        "手動入力待ち"}
                     </td>
                     <td>
                       {x.normalized_price
@@ -204,10 +194,10 @@ export function ResearchIngestionPage() {
                           className="text-link"
                           to={`/product-research/${x.candidate_id}`}
                         >
-                          Open Candidate
+                          候補を開く
                         </Link>
                       ) : (
-                        "Not created"
+                        "未作成"
                       )}
                     </td>
                     <td>{new Date(x.created_at).toLocaleDateString()}</td>
@@ -219,13 +209,13 @@ export function ResearchIngestionPage() {
                               className="secondary-button"
                               onClick={() => setConvertId(x.id)}
                             >
-                              Create Candidate
+                              候補を作成
                             </button>
                           )}
                         <button
                           className="secondary-button"
                           onClick={async () => {
-                            if (window.confirm("Delete this source record?")) {
+                            if (window.confirm("この取込データを削除しますか？")) {
                               try {
                                 await deleteResearchSource(x.id);
                                 await load();
@@ -233,13 +223,13 @@ export function ResearchIngestionPage() {
                                 setError(
                                   deleteError instanceof Error
                                     ? deleteError.message
-                                    : "Delete failed.",
+                                    : "削除できませんでした。",
                                 );
                               }
                             }
                           }}
                         >
-                          Delete
+                          削除
                         </button>
                       </div>
                     </td>
@@ -301,32 +291,32 @@ function UrlForm({
       await onSaved();
       onClose();
     } catch (x) {
-      setError(x instanceof Error ? x.message : "Registration failed.");
+      setError(x instanceof Error ? x.message : "登録できませんでした。");
     }
   };
   return (
     <div className="modal-backdrop">
       <form
         className="modal-panel research-form"
-        aria-label="URL import form"
+        aria-label="URL登録フォーム"
         onSubmit={(e) => void submit(e)}
       >
         <div className="modal-panel__header">
-          <h2>Add Product URL</h2>
+          <h2>商品URLを追加</h2>
           <button type="button" className="secondary-button" onClick={onClose}>
-            Close
+            閉じる
           </button>
         </div>
         {error && <div className="form-error-banner">{error}</div>}
         <label className="form-field">
-          Supplier
+          仕入先
           <select
             className="form-field__input"
             value={supplier}
             onChange={(e) => setSupplier(e.target.value)}
             required
           >
-            <option value="">Select...</option>
+            <option value="">選択してください</option>
             {suppliers.map((x) => (
               <option key={x.id} value={x.id}>
                 {x.name}
@@ -335,23 +325,22 @@ function UrlForm({
           </select>
         </label>
         <label className="form-field">
-          Category (optional)
+          カテゴリ（任意）
           <select className="form-field__input" value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="">Uncategorized</option>
+            <option value="">カテゴリ未設定</option>
             {categories.map((x) => <option key={x.id} value={x.id}>{x.category_name}</option>)}
           </select>
         </label>
         {selected && (
           <div className="panel">
-            <strong>Acquisition policy</strong>
+            <strong>取得ポリシー</strong>
             <p>
-              {selected.ingestion_source_type} · Automated fetching{" "}
-              {selected.automated_fetch_enabled ? "enabled" : "disabled"}
+              {label(selected.ingestion_source_type)} · 自動取得: {selected.automated_fetch_enabled ? "有効" : "無効"}
             </p>
           </div>
         )}
         <label className="form-field">
-          Product URL
+          商品URL
           <input
             type="url"
             className="form-field__input"
@@ -361,16 +350,16 @@ function UrlForm({
           />
         </label>
         <label className="form-field">
-          Purchase restriction (optional)
+          購入制限（任意）
           <select className="form-field__input" value={restriction} onChange={(e) => setRestriction(e.target.value)}>
             {["unknown", "normal", "pre_order", "personalized", "made_to_order", "client_advisor_only", "boutique_only", "research_only"].map((value) => <option key={value} value={value}>{value.replace(/_/g, " ")}</option>)}
           </select>
         </label>
         <p className="subtle">
-          Manual URL registration only. This action does not fetch the external
+          手動URL登録のみを行います。この操作では外部サイトを自動取得しません。
           website.
         </p>
-        <button className="primary-button">Register URL</button>
+        <button className="primary-button">URLを登録</button>
       </form>
     </div>
   );
@@ -392,46 +381,45 @@ function CsvForm({
       setResult(await importResearchCsv(file));
       await onSaved();
     } catch (x) {
-      setError(x instanceof Error ? x.message : "Import failed.");
+      setError(x instanceof Error ? x.message : "取込に失敗しました。");
     }
   };
   return (
     <div className="modal-backdrop">
       <form
         className="modal-panel research-form"
-        aria-label="CSV import form"
+        aria-label="CSV取込フォーム"
         onSubmit={(e) => void submit(e)}
       >
         <div className="modal-panel__header">
-          <h2>CSV Import</h2>
+          <h2>CSV取込</h2>
           <button type="button" className="secondary-button" onClick={onClose}>
-            Close
+            閉じる
           </button>
         </div>
         <p>
-          Expected columns: supplier, brand, product_url, product_name,
+          必須列: supplier, brand, product_url, product_name,
           supplier_product_code, supplier_price, currency, availability,
-          buyma_price, category_code (optional), purchase_restriction (optional)
+          buyma_price, category_code（任意）, purchase_restriction（任意）
         </p>
         {error && <div className="form-error-banner">{error}</div>}
         <input
-          aria-label="CSV file"
+          aria-label="CSVファイル"
           type="file"
           accept=".csv,text/csv"
           onChange={(e) => setFile(e.target.files?.[0] || null)}
           required
         />
-        <button className="primary-button">Import CSV</button>
+        <button className="primary-button">CSVを取り込む</button>
         {result && (
           <div className="panel">
             <strong>
-              {result.success_count} success · {result.failed_count} failed ·{" "}
-              {result.duplicate_count} duplicate
+              成功 {result.success_count}件 · 失敗 {result.failed_count}件 · 重複 {result.duplicate_count}件
             </strong>
             <ul>
               {result.rows.map((x) => (
                 <li key={x.row}>
-                  Row {x.row}: {x.status}
+                  行 {x.row}: {label(x.status)}
                   {x.message ? ` - ${x.message}` : ""}
                 </li>
               ))}
@@ -465,25 +453,25 @@ function ConvertForm({
       await onSaved();
       onClose();
     } catch (x) {
-      setError(x instanceof Error ? x.message : "Conversion failed.");
+      setError(x instanceof Error ? x.message : "候補を作成できませんでした。");
     }
   };
   return (
     <div className="modal-backdrop">
       <form
         className="modal-panel research-form"
-        aria-label="Candidate conversion form"
+          aria-label="商品リサーチ候補変換フォーム"
         onSubmit={(e) => void submit(e)}
       >
         <div className="modal-panel__header">
-          <h2>Create Candidate</h2>
+          <h2>商品リサーチ候補を作成</h2>
           <button type="button" className="secondary-button" onClick={onClose}>
-            Close
+            閉じる
           </button>
         </div>
         {error && <div className="form-error-banner">{error}</div>}
         <label className="form-field">
-          Exchange rate
+          為替レート
           <input
             type="number"
             step="any"
@@ -494,7 +482,7 @@ function ConvertForm({
           />
         </label>
         <label className="form-field">
-          BUYMA price
+          BUYMA販売価格
           <input
             type="number"
             step="any"
@@ -504,7 +492,7 @@ function ConvertForm({
             required
           />
         </label>
-        <button className="primary-button">Create Candidate</button>
+        <button className="primary-button">候補を作成</button>
       </form>
     </div>
   );

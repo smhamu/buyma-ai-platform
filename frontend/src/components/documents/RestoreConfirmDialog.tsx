@@ -22,12 +22,11 @@ export function RestoreConfirmDialog({
       <div className="modal-panel">
         <div className="modal-panel__header">
           <div>
-            <h2>Restore version {version}?</h2>
+            <h2>バージョン{version}を復元しますか？</h2>
             <p>
-              Restoring an old version will create a new latest version.
-              Existing version history will not be deleted.
+              旧バージョンの復元により、新しい最新バージョンが作成されます。既存の履歴は削除されません。
             </p>
-            {latestVersion !== null ? <p>Current latest version: v{latestVersion}</p> : null}
+            {latestVersion !== null ? <p>現在の最新バージョン: v{latestVersion}</p> : null}
           </div>
         </div>
 
@@ -35,10 +34,10 @@ export function RestoreConfirmDialog({
 
         <div className="dialog-actions">
           <button className="secondary-button" onClick={onCancel} disabled={restoring}>
-            Cancel
+            キャンセル
           </button>
           <button className="primary-button" onClick={onConfirm} disabled={restoring}>
-            {restoring ? "Restoring..." : "Restore"}
+            {restoring ? "復元中..." : "復元"}
           </button>
         </div>
       </div>

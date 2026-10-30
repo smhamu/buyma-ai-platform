@@ -20,6 +20,7 @@ import type {
 } from "../modules/documents/types";
 import { fetchKnowledgeBase } from "../modules/knowledge-bases/api";
 import type { KnowledgeBase } from "../modules/knowledge-bases/types";
+import { label } from "../modules/product-research/format";
 
 export function DocumentDetailPage() {
   const { knowledgeBaseId, documentId } = useParams<{
@@ -84,7 +85,7 @@ export function DocumentDetailPage() {
             setError(
               err instanceof ApiClientError
                 ? err.message
-                : "Failed to load document detail.",
+                : "ドキュメント詳細を読み込めませんでした。",
             );
           }
         }
@@ -123,7 +124,7 @@ export function DocumentDetailPage() {
         if (!ignore) {
           setDiff(null);
           setDiffError(
-            err instanceof ApiClientError ? err.message : "Failed to load diff.",
+            err instanceof ApiClientError ? err.message : "差分を読み込めませんでした。",
           );
         }
       } finally {
@@ -157,7 +158,7 @@ export function DocumentDetailPage() {
       setDiffError(null);
     } catch (err) {
       setVersionsError(
-        err instanceof ApiClientError ? err.message : "Failed to refresh versions.",
+        err instanceof ApiClientError ? err.message : "バージョン履歴を更新できませんでした。",
       );
     } finally {
       setVersionsLoading(false);
@@ -175,7 +176,7 @@ export function DocumentDetailPage() {
       await reloadVersions(result.new_document.id);
     } catch (err) {
       setRestoreError(
-        err instanceof ApiClientError ? err.message : "Failed to restore version.",
+        err instanceof ApiClientError ? err.message : "バージョンを復元できませんでした。",
       );
     } finally {
       setRestoring(false);
@@ -183,14 +184,13 @@ export function DocumentDetailPage() {
   };
 
   if (loading) {
-    return <div className="page-status">Loading document detail...</div>;
+    return <div className="page-status">ドキュメント詳細を読み込み中...</div>;
   }
 
   if (notFound) {
     return (
       <div className="panel panel--empty">
-        <h1>Document not found</h1>
-        <p>The document does not exist or you do not have access.</p>
+        <h1>ドキュメントが見つかりません</h1><p>ドキュメントが存在しないか、アクセス権限がありません。</p>
       </div>
     );
   }
@@ -198,8 +198,8 @@ export function DocumentDetailPage() {
   if (error || !document) {
     return (
       <div className="panel panel--error">
-        <h1>Failed to load document detail</h1>
-        <p>{error || "Unknown error"}</p>
+        <h1>ドキュメント詳細を読み込めませんでした</h1>
+        <p>{error || "不明なエラー"}</p>
       </div>
     );
   }
@@ -212,50 +212,50 @@ export function DocumentDetailPage() {
             className="text-link"
             to={`/knowledge-bases/${knowledgeBaseId}/documents`}
           >
-            ← Documents
+            ← ドキュメント
           </Link>
           <h1>{document.title}</h1>
-          <p>{knowledgeBase?.name ?? "Knowledge Base"}</p>
+          <p>{knowledgeBase?.name ?? "ナレッジベース"}</p>
         </div>
       </div>
 
       <div className="detail-grid">
         <div className="panel">
-          <h2>Overview</h2>
+          <h2>概要</h2>
           <div className="detail-list">
-            <DetailRow label="Title" value={document.title} />
-            <DetailRow label="Filename" value={document.original_filename ?? "-"} />
-            <DetailRow label="Source Type" value={document.source_type} />
-            <DetailRow label="Version" value={`v${document.version}`} />
+            <DetailRow label="タイトル" value={document.title} />
+            <DetailRow label="ファイル名" value={document.original_filename ?? "-"} />
+            <DetailRow label="ソース種別" value={label(document.source_type)} />
+            <DetailRow label="バージョン" value={`v${document.version}`} />
             <DetailRow
-              label="Latest"
-              value={document.is_latest ? "Latest" : "Old version"}
+              label="最新版"
+              value={document.is_latest ? "最新" : "旧バージョン"}
             />
-            <DetailRow label="Status" value={document.status} />
+            <DetailRow label="ステータス" value={label(document.status)} />
             <DetailRow
-              label="Ingestion"
+              label="取込状態"
               value={<DocumentStatusBadge status={document.ingestion_status} />}
             />
-            <DetailRow label="MIME Type" value={document.mime_type ?? "-"} />
+            <DetailRow label="MIMEタイプ" value={document.mime_type ?? "-"} />
             <DetailRow
-              label="File Size"
+              label="ファイルサイズ"
               value={
-                document.file_size !== null ? `${document.file_size} bytes` : "-"
+                document.file_size !== null ? `${document.file_size}バイト` : "-"
               }
             />
-            <DetailRow label="Checksum" value={document.checksum ?? "-"} mono />
-            <DetailRow label="Source URL" value={document.source_url ?? "-"} mono />
+            <DetailRow label="チェックサム" value={document.checksum ?? "-"} mono />
+            <DetailRow label="ソースURL" value={document.source_url ?? "-"} mono />
           </div>
         </div>
 
         <div className="panel">
-          <h2>Version History</h2>
+          <h2>バージョン履歴</h2>
           {versionsLoading ? (
-            <p>Loading versions...</p>
+            <p>バージョン履歴を読み込み中...</p>
           ) : versionsError ? (
             <div className="form-error-banner">{versionsError}</div>
           ) : versions.length === 0 ? (
-            <p>No versions found.</p>
+            <p>バージョン履歴はありません。</p>
           ) : (
             <div className="version-list">
               {versions
@@ -266,11 +266,11 @@ export function DocumentDetailPage() {
                     <div className="version-item__meta">
                       <div className="version-item__title">
                         v{version.version}
-                        {version.is_latest ? <Badge tone="success">Latest</Badge> : null}
+                        {version.is_latest ? <Badge tone="success">最新</Badge> : null}
                       </div>
                       <div className="version-item__sub">
                         <DocumentStatusBadge status={version.ingestion_status} />
-                        <Badge tone="neutral">{version.source_type}</Badge>
+                        <Badge tone="neutral">{label(version.source_type)}</Badge>
                       </div>
                       <div className="version-item__description">
                         <div>{version.title}</div>
@@ -283,7 +283,7 @@ export function DocumentDetailPage() {
                         onClick={() => setSelectedCompareId(version.id)}
                         disabled={version.id === document.id}
                       >
-                        Diff
+                        差分
                       </button>
                       <button
                         className="secondary-button"
@@ -293,7 +293,7 @@ export function DocumentDetailPage() {
                         }}
                         disabled={version.is_latest}
                       >
-                        Restore
+                        復元
                       </button>
                     </div>
                   </div>

@@ -13,17 +13,17 @@ describe("NotificationSettingsPage",()=>{
   beforeEach(()=>{vi.clearAllMocks();fetchSetting.mockResolvedValue(unconfigured);fetchDeliveries.mockResolvedValue({items:[],page:1,page_size:5,total:0,total_pages:0});});
   it("never displays a stored webhook and saves a new integration",async()=>{
     saveSetting.mockResolvedValue({...unconfigured,enabled:true,configured:true,destination_label:"Ops",subscribed_event_types:["supplier_policy_review_changed"]});
-    render(<NotificationSettingsPage/>);await screen.findByRole("form",{name:"Slack notification settings"});
-    fireEvent.change(screen.getByLabelText("Destination label"),{target:{value:"Ops"}});
-    fireEvent.click(screen.getByLabelText("Enabled"));fireEvent.click(screen.getByLabelText("Supplier Policy Review Changes"));
-    fireEvent.change(screen.getByLabelText("Slack webhook URL"),{target:{value:"https://hooks.slack.com/services/a/b/c"}});
-    fireEvent.click(screen.getByRole("button",{name:"Save Settings"}));
+    render(<NotificationSettingsPage/>);await screen.findByRole("form",{name:"Slack通知設定"});
+    fireEvent.change(screen.getByLabelText("通知先名"),{target:{value:"Ops"}});
+    fireEvent.click(screen.getByLabelText("有効"));fireEvent.click(screen.getByLabelText("仕入先ポリシーレビューの変更"));
+    fireEvent.change(screen.getByLabelText("Slack Webhook URL"),{target:{value:"https://hooks.slack.com/services/a/b/c"}});
+    fireEvent.click(screen.getByRole("button",{name:"設定を保存"}));
     await waitFor(()=>expect(saveSetting).toHaveBeenCalled());
     expect(await screen.findByText("Webhook:")).toBeInTheDocument();
     expect(screen.queryByDisplayValue("https://hooks.slack.com/services/a/b/c")).not.toBeInTheDocument();
   });
   it("shows recent delivery metadata without raw errors",async()=>{
     fetchDeliveries.mockResolvedValue({items:[{id:"1",channel_type:"slack",event_type:"supplier_policy_review_changed",status:"delivered",created_at:"2026-08-16T00:00:00Z",delivered_at:"2026-08-16T00:00:01Z"}],page:1,page_size:5,total:1,total_pages:1});
-    render(<NotificationSettingsPage/>);expect(await screen.findByText("delivered")).toBeInTheDocument();expect(screen.getByText("supplier policy review changed")).toBeInTheDocument();
+    render(<NotificationSettingsPage/>);expect(await screen.findByText("配信済み")).toBeInTheDocument();expect(screen.getAllByText("仕入先ポリシーレビューの変更").length).toBeGreaterThan(0);
   });
 });

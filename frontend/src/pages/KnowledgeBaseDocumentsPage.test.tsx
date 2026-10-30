@@ -101,7 +101,7 @@ describe("KnowledgeBaseDocumentsPage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("No documents found")).toBeInTheDocument();
+      expect(screen.getByText("ドキュメントがありません")).toBeInTheDocument();
     });
   });
 
@@ -172,7 +172,7 @@ describe("KnowledgeBaseDocumentsPage", () => {
       expect(screen.getAllByText("Failed Doc").length).toBeGreaterThan(0);
     });
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Retry" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "再試行" })[0]);
 
     await waitFor(() => {
       expect(retryDocumentIngestion).toHaveBeenCalledWith("doc-1");
@@ -219,15 +219,15 @@ describe("KnowledgeBaseDocumentsPage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("No documents found")).toBeInTheDocument();
+      expect(screen.getByText("ドキュメントがありません")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Upload Document" }));
+    fireEvent.click(screen.getByRole("button", { name: "ドキュメントをアップロード" }));
 
     await waitFor(() => {
       expect(
         screen.getByText(
-          "Upload a PDF, TXT, or Markdown file into this Knowledge Base.",
+          "PDF、TXT、Markdownファイルをこのナレッジベースへ追加します。",
         ),
       ).toBeInTheDocument();
     });

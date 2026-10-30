@@ -51,7 +51,7 @@ export function KnowledgeBaseDetailPage() {
             setError(
               err instanceof ApiClientError
                 ? err.message
-                : "Failed to load Knowledge Base detail.",
+                : "ナレッジベースの詳細を読み込めませんでした。",
             );
           }
         }
@@ -70,16 +70,15 @@ export function KnowledgeBaseDetailPage() {
   }, [knowledgeBaseId]);
 
   if (isLoading) {
-    return <div className="page-status">Loading Knowledge Base detail...</div>;
+    return <div className="page-status">ナレッジベースの詳細を読み込み中...</div>;
   }
 
   if (notFound) {
     return (
       <div className="panel panel--empty">
-        <h1>Knowledge Base not found</h1>
-        <p>The Knowledge Base does not exist or you do not have access.</p>
+        <h1>ナレッジベースが見つかりません</h1><p>ナレッジベースが存在しないか、アクセス権限がありません。</p>
         <Link className="text-link" to="/knowledge-bases">
-          Back to Knowledge Bases
+          ナレッジベース一覧へ戻る
         </Link>
       </div>
     );
@@ -88,8 +87,7 @@ export function KnowledgeBaseDetailPage() {
   if (error || !knowledgeBase || !stats) {
     return (
       <div className="panel panel--error">
-        <h1>Failed to load Knowledge Base detail</h1>
-        <p>{error || "Unknown error"}</p>
+        <h1>ナレッジベースの詳細を読み込めませんでした</h1><p>{error || "不明なエラー"}</p>
       </div>
     );
   }
@@ -99,46 +97,40 @@ export function KnowledgeBaseDetailPage() {
       <div className="page-section__header">
         <div>
           <Link className="text-link" to="/knowledge-bases">
-            ← Knowledge Bases
+            ← ナレッジベース一覧
           </Link>
           <h1>{knowledgeBase.name}</h1>
-          <p>{knowledgeBase.description || "No description provided."}</p>
+          <p>{knowledgeBase.description || "説明はありません。"}</p>
         </div>
         <Badge tone={knowledgeBase.is_active ? "success" : "muted"}>
-          {knowledgeBase.is_active ? "Active" : "Inactive"}
+          {knowledgeBase.is_active ? "有効" : "無効"}
         </Badge>
       </div>
 
       <div className="status-grid">
         <StatusCard
-          label="Documents"
+          label="ドキュメント（全バージョン）"
           value={stats.document_count}
-          helper="All document versions"
+          helper="旧バージョンを含む"
         />
         <StatusCard
-          label="Latest"
+          label="最新ドキュメント"
           value={stats.latest_document_count}
-          helper="Latest versions only"
+          helper="最新バージョンのみ"
         />
-        <StatusCard label="Ready" value={stats.ready_count} />
-        <StatusCard label="Pending" value={stats.pending_count} />
-        <StatusCard label="Processing" value={stats.processing_count} />
-        <StatusCard label="Failed" value={stats.failed_count} />
-        <StatusCard label="Chunks" value={stats.chunk_count} />
-        <StatusCard label="Embeddings" value={stats.embedding_count} />
+        <StatusCard label="準備完了" value={stats.ready_count} /><StatusCard label="処理待ち" value={stats.pending_count} /><StatusCard label="処理中" value={stats.processing_count} /><StatusCard label="失敗" value={stats.failed_count} /><StatusCard label="チャンク" value={stats.chunk_count} /><StatusCard label="埋め込み" value={stats.embedding_count} />
       </div>
 
       <div className="panel">
-        <h2>Documents</h2>
+        <h2>ドキュメント</h2>
         <p>
-          Open the document list to review files, retry failed ingestion jobs, and
-          inspect version history.
+          ファイル、取込ジョブ、バージョン履歴を確認できます。
         </p>
         <Link
           className="secondary-button secondary-button--link"
           to={`/knowledge-bases/${knowledgeBase.id}/documents`}
         >
-          Open Documents
+          ドキュメントを開く
         </Link>
       </div>
     </section>
