@@ -25,6 +25,14 @@ Webhook plaintext is never stored in PostgreSQL, Outbox, or Delivery. PostgreSQL
 
 Production requires `NOTIFICATION_SECRET_STORE=ssm` and EC2 Instance Profile credentials. Grant narrowly scoped `ssm:GetParameter`, `ssm:PutParameter`, and `ssm:DeleteParameter` for `/buyma-ai/production/users/*`. SecureString is resolved immediately before delivery so rotation takes effect without snapshots. SSM unavailability is retryable; a missing parameter is a permanent configuration error.
 
+The supported environment split is:
+
+- Test: `NOTIFICATION_SECRET_STORE=memory` keeps each test isolated.
+- Development: `NOTIFICATION_SECRET_STORE=redis` lets the Backend and Celery Worker resolve the same webhook through the existing `CELERY_BROKER_URL` Redis service. Keys use `notification-secret:<secret-reference>`. This storage is development-only, is not an encrypted production secret manager, and may be lost when local Redis is reset or recreated.
+- Production: `NOTIFICATION_SECRET_STORE=ssm` is mandatory. Production configuration and store construction fail closed for both `memory` and `redis`; an SSM failure never falls back to another store.
+
+Redis keys and values are not included in normal application logs. The API continues to expose only configured state and labels, never the webhook or its secret reference.
+
 The Production proxy permits encrypted CONNECT to regional `ssm.<region>.amazonaws.com`, `hooks.slack.com`, and `api.openai.com`. IMDS `169.254.169.254` bypasses the proxy; the EC2 metadata hop limit must permit container access. A private SSM VPC endpoint is recommended for later hardening.
 
 External secret writes and DB commits cannot be atomic. PUT compensates a DB failure by restoring/deleting the new secret. DELETE commits `enabled=false` before external deletion, leaving a safe retryable state if SSM is unavailable.

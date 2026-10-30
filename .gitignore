@@ -18,8 +18,15 @@ venv/
 .vscode/
 .idea/
 
+# Local tooling
+.tools/
+.node-index.json
+
 # Logs
 *.log
+
+# Local notification smoke-test payloads
+slack-test.json
 
 # Alembic
 *.db

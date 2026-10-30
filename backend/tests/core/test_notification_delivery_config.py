@@ -31,3 +31,18 @@ def test_production_rejects_noop_and_accepts_configured_slack():
         notification_secret_store="ssm",
     )
     assert configured.notification_delivery_provider == "slack"
+
+
+@pytest.mark.parametrize("secret_store", ["memory", "redis"])
+def test_production_rejects_non_ssm_secret_stores(secret_store):
+    with pytest.raises(ValidationError, match="must use the SSM"):
+        settings(app_env="production", notification_secret_store=secret_store)
+
+
+def test_development_accepts_redis_and_test_accepts_memory():
+    assert settings(app_env="development", notification_secret_store="redis").notification_secret_store == "redis"
+    assert settings(app_env="test", notification_secret_store="memory").notification_secret_store == "memory"
+
+
+def test_production_accepts_ssm_secret_store():
+    assert settings(app_env="production", notification_secret_store="ssm").notification_secret_store == "ssm"
