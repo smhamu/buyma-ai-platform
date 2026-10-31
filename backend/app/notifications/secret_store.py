@@ -29,6 +29,10 @@ def slack_secret_reference(user_id: UUID, app_env: str) -> str:
     return f"/buyma-ai/{app_env}/users/{user_id}/notifications/slack/webhook"
 
 
+def rakuten_product_search_token_reference(app_env: str) -> str:
+    return f"/buyma-ai/{app_env}/integrations/rakuten/product-search-token"
+
+
 class InMemoryNotificationSecretStore:
     def __init__(self):
         if settings.app_env == "production":

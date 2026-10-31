@@ -10,6 +10,10 @@ Official references:
 
 The client requires a bearer token at runtime and never reads one from source-controlled configuration. Callers must obtain it from an approved secret store. Do not put tokens in Git, supplier notes, database payloads, URLs, logs, screenshots, or test fixtures.
 
+Administrators manage the token from **External integrations** in the management console. The API endpoints are `GET`, `PUT`, and `DELETE /integration-settings/rakuten`. They expose only whether a token is configured; the stored value is never returned. Development uses the configured Redis secret store and production uses encrypted SSM Parameter Store at `/buyma-ai/{environment}/integrations/rakuten/product-search-token`.
+
+Saving a token does not make a live Rakuten request or enable a supplier. Keep synchronization disabled until the advertiser has approved the intended use.
+
 Implemented safeguards:
 
 - fixed HTTPS endpoint with environment proxies disabled;

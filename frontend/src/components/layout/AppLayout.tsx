@@ -30,6 +30,7 @@ export function AppLayout() {
           <NavLink to="/brands" className={({isActive})=>`sidebar__link ${isActive?"sidebar__link--active":""}`}>ブランド</NavLink>
           <div className="sidebar__section">アカウント</div>
           <NavLink to="/notification-settings" className={({isActive})=>`sidebar__link ${isActive?"sidebar__link--active":""}`}>通知設定</NavLink>
+          {user?.role === "admin" && <NavLink to="/integration-settings" className={({isActive})=>`sidebar__link ${isActive?"sidebar__link--active":""}`}>外部サービス連携</NavLink>}
         </nav>
       </aside>
 
