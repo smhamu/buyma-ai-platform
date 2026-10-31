@@ -19,6 +19,8 @@ import type {
   SupplierPage,
 } from "../modules/suppliers/types";
 import { SupplierPolicyEvidencePanel } from "../components/suppliers/SupplierPolicyEvidencePanel";
+import { SupplierRakutenConfigPanel } from "../components/suppliers/SupplierRakutenConfigPanel";
+import { useAuth } from "../modules/auth/AuthContext";
 
 const blank: SupplierInput = {
   name: "",
@@ -48,13 +50,23 @@ const blank: SupplierInput = {
   request_interval_seconds: null,
   last_fetch_at: null,
 };
+const isMytheresa = (websiteUrl: string) => {
+  try {
+    const host = new globalThis.URL(websiteUrl).hostname.toLowerCase();
+    return host === "mytheresa.com" || host.endsWith(".mytheresa.com");
+  } catch {
+    return false;
+  }
+};
 export function SuppliersPage() {
+  const { user } = useAuth();
   const [sp, setSp] = useSearchParams();
   const [data, setData] = useState<SupplierPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<Supplier | null | undefined>();
   const [evidenceSupplier, setEvidenceSupplier] = useState<Supplier | null>(null);
+  const [rakutenSupplier, setRakutenSupplier] = useState<Supplier | null>(null);
   const query = useMemo(
     () => ({
       country: sp.get("country") || undefined,
@@ -240,6 +252,7 @@ export function SuppliersPage() {
                         >
                           ポリシー根拠
                         </button>
+                        {user?.role === "admin" && isMytheresa(s.website_url) && <button className="secondary-button" onClick={() => setRakutenSupplier(s)}>Rakuten連携</button>}
                         <button
                           className="secondary-button"
                           onClick={() => setEditing(s)}
@@ -277,6 +290,7 @@ export function SuppliersPage() {
         />
       )}
       {evidenceSupplier && <SupplierPolicyEvidencePanel supplier={evidenceSupplier} onClose={() => setEvidenceSupplier(null)} />}
+      {rakutenSupplier && <SupplierRakutenConfigPanel supplier={rakutenSupplier} onClose={() => setRakutenSupplier(null)} />}
     </section>
   );
 }

@@ -6,6 +6,11 @@ export type SupplierInput = Omit<Supplier, "id" | "owner_user_id" | "brands" | "
 export type SupplierQuery = { country?: string; supplier_type?: string; ships_to_japan?: boolean; buyma_allowed_status?: string; research_status?: string; is_active?: boolean; page?: number; page_size?: number; sort_by?: "name" | "country_code" | "created_at" | "updated_at"; sort_order?: SortOrder };
 export type SupplierPage = Paginated<Supplier>;
 
+export type RakutenApprovalStatus = "not_applied" | "pending" | "approved" | "rejected" | "suspended";
+export type RakutenLanguage = "en_US" | "fr_FR" | "de_DE" | "pt_BR";
+export type SupplierRakutenConfigInput = { advertiser_mid:number; approval_status:RakutenApprovalStatus; sync_enabled:boolean; search_keyword:string|null; language:RakutenLanguage; max_results:number; max_pages:number; sync_interval_minutes:number };
+export type SupplierRakutenConfig = Omit<SupplierRakutenConfigInput,"advertiser_mid"> & { configured:boolean; id:string|null; supplier_id:string; advertiser_mid:number|null; approved_at:string|null; can_sync:boolean; blocked_reasons:string[]; created_at:string|null; updated_at:string|null };
+
 export type EvidenceType = "terms" | "robots" | "vat" | "shipping" | "official_api" | "buyma" | "ingestion" | "resale_restriction" | "other";
 export type EvidenceResult = "allowed" | "restricted" | "prohibited" | "disallowed" | "supported" | "unsupported" | "confirmed" | "unconfirmed" | "unknown" | "unchecked" | "caution" | "included" | "excluded_for_export" | "not_refunded" | "manual" | "url_manual" | "csv" | "official_api" | "structured_data" | "html_parser" | "disabled";
 export type SupplierPolicyEvidence = { id:string; supplier_id:string; owner_user_id:string; evidence_type:EvidenceType; result:EvidenceResult; source_url:string|null; source_title:string|null; source_excerpt:string|null; evidence_notes:string; checked_at:string; checked_by_user_id:string; checked_by_username:string; policy_snapshot:Record<string,unknown>; created_at:string; updated_at:string };

@@ -14,6 +14,12 @@ Administrators manage the token from **External integrations** in the management
 
 Saving a token does not make a live Rakuten request or enable a supplier. Keep synchronization disabled until the advertiser has approved the intended use.
 
+## Mytheresa supplier configuration
+
+Administrators can store a Mytheresa advertiser MID and synchronization limits from the Supplier screen. Configuration is stored separately from the Supplier record. The initial approval state is `pending` and synchronization is disabled.
+
+Synchronization remains blocked unless every gate is satisfied: advertiser status is `approved`, the integration switch is enabled, the Supplier is active, automated fetching is enabled, the ingestion source is `official_api`, official API availability is confirmed, terms status is `allowed`, and the Rakuten API token is configured. Database constraints also prohibit enabling synchronization for an unapproved advertiser. Saving or deleting this configuration never calls Rakuten and no scheduler consumes it yet.
+
 Implemented safeguards:
 
 - fixed HTTPS endpoint with environment proxies disabled;

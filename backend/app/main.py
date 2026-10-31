@@ -32,6 +32,7 @@ from app.api.v1.notification_outbox import router as notification_outbox_router
 from app.api.v1.notification_channels import router as notification_channels_router
 from app.api.v1.notification_deliveries import router as notification_deliveries_router
 from app.api.v1.integration_settings import router as integration_settings_router
+from app.api.v1.supplier_rakuten_configs import router as supplier_rakuten_configs_router
 
 
 setup_logging()
@@ -113,6 +114,7 @@ app.include_router(notification_outbox_router)
 app.include_router(notification_channels_router)
 app.include_router(notification_deliveries_router)
 app.include_router(integration_settings_router)
+app.include_router(supplier_rakuten_configs_router)
 app.include_router(knowledge_bases_router)
 app.include_router(document_ingestion_router)
 app.include_router(document_versions_router)

@@ -28,6 +28,7 @@ from app.models.supplier_policy_review_transition import SupplierPolicyReviewTra
 from app.models.notification_outbox import NotificationOutbox
 from app.models.notification_channel_setting import NotificationChannelSetting
 from app.models.notification_delivery import NotificationDelivery
+from app.models.supplier_rakuten_config import SupplierRakutenConfig
 from app.core.config import settings
 
 # this is the Alembic Config object, which provides
