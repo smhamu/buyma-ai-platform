@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<result>
+  <TotalMatches>2</TotalMatches>
+  <TotalPages>2</TotalPages>
+  <PageNumber>2</PageNumber>
+  <item>
+    <mid>43171</mid><merchantname>Mytheresa</merchantname><linkid>98766</linkid><sku>SKU-002</sku>
+    <productname>Wool coat</productname><price currency="EUR">800.00</price>
+    <linkurl>https://click.linksynergy.com/deeplink?id=test2</linkurl>
+  </item>
+</result>

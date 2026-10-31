@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<result>
+  <TotalMatches>2</TotalMatches>
+  <TotalPages>2</TotalPages>
+  <PageNumber>1</PageNumber>
+  <item>
+    <mid>43171</mid>
+    <merchantname>Mytheresa</merchantname>
+    <linkid>98765</linkid>
+    <createdon>2026-10-30/05:30:32</createdon>
+    <sku>SKU-001</sku>
+    <productname>Leather shoulder bag</productname>
+    <category><primary>Women</primary><secondary>Bags~~Shoulder Bags</secondary></category>
+    <price currency="EUR">1200.00</price>
+    <saleprice currency="EUR">950.50</saleprice>
+    <description><short>Leather bag</short><long>Italian leather shoulder bag</long></description>
+    <linkurl>https://click.linksynergy.com/deeplink?id=test</linkurl>
+    <imageurl>https://img.example.test/bag.jpg</imageurl>
+  </item>
+</result>
