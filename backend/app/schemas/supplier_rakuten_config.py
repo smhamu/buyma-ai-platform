@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
@@ -53,5 +54,37 @@ class SupplierRakutenConfigResponse(BaseModel):
     approved_at: datetime | None = None
     can_sync: bool
     blocked_reasons: list[str]
+    can_preview: bool
+    preview_blocked_reasons: list[str]
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+class RakutenPreviewRequest(BaseModel):
+    page_number: int = Field(default=1, ge=1, le=100)
+
+
+class RakutenPreviewProduct(BaseModel):
+    advertiser_id: int
+    advertiser_name: str
+    link_id: str
+    sku: str | None
+    name: str
+    price: Decimal
+    currency: str
+    product_url: str
+    image_url: str | None
+    primary_category: str | None
+    secondary_category: str | None
+    short_description: str | None
+
+
+class RakutenPreviewResponse(BaseModel):
+    supplier_id: UUID
+    advertiser_mid: int
+    page_number: int
+    total_pages: int
+    total_matches: int
+    fetched_at: datetime
+    persisted: Literal[False] = False
+    items: list[RakutenPreviewProduct]

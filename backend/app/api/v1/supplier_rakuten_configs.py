@@ -16,10 +16,12 @@ from app.notifications.secret_store import (
     rakuten_product_search_token_reference,
 )
 from app.schemas.supplier_rakuten_config import (
+    RakutenPreviewRequest,
     SupplierRakutenConfigResponse,
     SupplierRakutenConfigUpdate,
 )
 from app.services.supplier_rakuten_config_service import SupplierRakutenConfigService
+from app.services.supplier_rakuten_preview_service import SupplierRakutenPreviewService
 
 router = APIRouter(prefix="/suppliers", tags=["Supplier Rakuten Configuration"])
 
@@ -32,11 +34,16 @@ def response(config, supplier, *, token_configured: bool) -> SupplierRakutenConf
     can_sync, blocked_reasons = SupplierRakutenConfigService.gate(
         config, supplier, token_configured=token_configured
     )
+    can_preview, preview_blocked_reasons = SupplierRakutenConfigService.preview_gate(
+        config, supplier, token_configured=token_configured
+    )
     values = {
         "configured": config is not None,
         "supplier_id": supplier.id,
         "can_sync": can_sync,
         "blocked_reasons": blocked_reasons,
+        "can_preview": can_preview,
+        "preview_blocked_reasons": preview_blocked_reasons,
     }
     if config is not None:
         values.update({
@@ -101,4 +108,24 @@ async def delete_rakuten_config(
     return success_response(
         data=response(None, supplier, token_configured=await token_exists(secret_store)),
         message="Supplier Rakuten configuration removed successfully.",
+    )
+
+
+@router.post("/{supplier_id}/rakuten-preview")
+async def preview_rakuten_products(
+    supplier_id: UUID,
+    payload: RakutenPreviewRequest,
+    service: SupplierRakutenConfigService = Depends(get_service),
+    _: User = Depends(require_admin),
+    secret_store: NotificationSecretStore = Depends(get_notification_secret_store),
+):
+    preview_service = SupplierRakutenPreviewService(
+        service,
+        secret_store,
+        rakuten_product_search_token_reference(settings.app_env),
+    )
+    preview = await preview_service.preview(supplier_id, payload.page_number)
+    return success_response(
+        data=preview,
+        message="Rakuten product preview fetched without persistence.",
     )

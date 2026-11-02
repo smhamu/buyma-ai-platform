@@ -4,12 +4,14 @@ import { Badge } from "../ui/Badge";
 import {
   deleteSupplierRakutenConfig,
   fetchSupplierRakutenConfig,
+  previewSupplierRakutenProducts,
   saveSupplierRakutenConfig,
 } from "../../modules/suppliers/api";
 import type {
   Supplier,
   SupplierRakutenConfig,
   SupplierRakutenConfigInput,
+  RakutenPreview,
 } from "../../modules/suppliers/types";
 
 const defaults: SupplierRakutenConfigInput = {
@@ -42,6 +44,8 @@ export function SupplierRakutenConfigPanel({ supplier, onClose }: { supplier: Su
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [preview, setPreview] = useState<RakutenPreview | null>(null);
+  const [previewing, setPreviewing] = useState(false);
 
   useEffect(() => {
     void fetchSupplierRakutenConfig(supplier.id)
@@ -73,10 +77,20 @@ export function SupplierRakutenConfigPanel({ supplier, onClose }: { supplier: Su
     try {
       const saved = await saveSupplierRakutenConfig(supplier.id, form);
       setSetting(saved);
+      setPreview(null);
       setNotice("Rakuten連携設定を保存しました。");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Rakuten連携設定を保存できませんでした。");
     } finally { setSaving(false); }
+  };
+
+  const loadPreview = async (pageNumber = 1) => {
+    setPreviewing(true); setError(""); setNotice("");
+    try {
+      setPreview(await previewSupplierRakutenProducts(supplier.id, pageNumber));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "商品プレビューを取得できませんでした。");
+    } finally { setPreviewing(false); }
   };
 
   const remove = async () => {
@@ -111,7 +125,13 @@ export function SupplierRakutenConfigPanel({ supplier, onClose }: { supplier: Su
       <label className="form-field">検索キーワード（任意）<input className="form-field__input" maxLength={200} value={form.search_keyword ?? ""} onChange={(event) => field("search_keyword", event.target.value || null)}/></label>
       <label className="checkbox-field"><input type="checkbox" checked={form.sync_enabled} disabled={form.approval_status !== "approved"} onChange={(event) => field("sync_enabled", event.target.checked)}/>商品同期を有効にする</label>
       <p className="form-help">承認待ちの間は同期を有効にできません。設定を保存しても、この画面からRakutenへの通信は発生しません。</p>
-      <div className="row-actions"><button className="primary-button" disabled={saving}>{saving ? "保存中..." : "設定を保存"}</button>{setting?.configured && <button type="button" className="danger-button" disabled={saving} onClick={() => void remove()}>設定を削除</button>}</div>
+      <div className="row-actions"><button className="primary-button" disabled={saving}>{saving ? "保存中..." : "設定を保存"}</button>{setting?.can_preview && <button type="button" className="secondary-button" disabled={previewing || saving} onClick={() => void loadPreview(1)}>{previewing ? "取得中..." : "商品をプレビュー"}</button>}{setting?.configured && <button type="button" className="danger-button" disabled={saving} onClick={() => void remove()}>設定を削除</button>}</div>
+      {setting?.configured && !setting.can_preview && <p className="form-help">プレビューは承認、APIトークン、仕入先ポリシー条件がすべて揃うと実行できます。</p>}
+      {preview && <section className="panel" aria-label="Rakuten商品プレビュー">
+        <h3>商品プレビュー</h3><p>{preview.total_matches.toLocaleString("ja-JP")}件中 {preview.items.length}件を表示 · DB保存なし</p>
+        {preview.items.length ? <div className="table-wrapper"><table className="data-table"><thead><tr><th>商品</th><th>SKU</th><th>価格</th><th>カテゴリ</th><th>リンク</th></tr></thead><tbody>{preview.items.map((item) => <tr key={`${item.link_id}-${item.sku ?? ""}`}><td><strong>{item.name}</strong>{item.short_description && <div className="subtle">{item.short_description}</div>}</td><td>{item.sku ?? "-"}</td><td>{new Intl.NumberFormat("ja-JP", { style:"currency", currency:item.currency }).format(Number(item.price))}</td><td>{[item.primary_category,item.secondary_category].filter(Boolean).join(" / ") || "-"}</td><td><a className="text-link" href={item.product_url} target="_blank" rel="noopener noreferrer">商品を見る</a></td></tr>)}</tbody></table></div> : <p>該当商品はありません。</p>}
+        <div className="row-actions"><button type="button" className="secondary-button" disabled={previewing || preview.page_number <= 1} onClick={() => void loadPreview(preview.page_number - 1)}>前へ</button><span>{preview.page_number} / {Math.max(preview.total_pages, 1)}ページ</span><button type="button" className="secondary-button" disabled={previewing || preview.page_number >= preview.total_pages || preview.page_number >= form.max_pages} onClick={() => void loadPreview(preview.page_number + 1)}>次へ</button></div>
+      </section>}
     </>}
   </form></div>;
 }

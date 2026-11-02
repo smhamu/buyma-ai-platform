@@ -106,3 +106,17 @@ class SupplierRakutenConfigService:
         if supplier.terms_status != "allowed":
             reasons.append("terms_not_allowed")
         return reasons
+
+    @staticmethod
+    def preview_gate(
+        config: SupplierRakutenConfig | None, supplier: Supplier, *, token_configured: bool
+    ) -> tuple[bool, list[str]]:
+        reasons: list[str] = []
+        if config is None:
+            reasons.append("configuration_missing")
+        elif config.approval_status != "approved":
+            reasons.append("advertiser_not_approved")
+        reasons.extend(SupplierRakutenConfigService.supplier_policy_reasons(supplier))
+        if not token_configured:
+            reasons.append("rakuten_token_missing")
+        return not reasons, reasons

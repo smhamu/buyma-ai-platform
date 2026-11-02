@@ -9,7 +9,9 @@ export type SupplierPage = Paginated<Supplier>;
 export type RakutenApprovalStatus = "not_applied" | "pending" | "approved" | "rejected" | "suspended";
 export type RakutenLanguage = "en_US" | "fr_FR" | "de_DE" | "pt_BR";
 export type SupplierRakutenConfigInput = { advertiser_mid:number; approval_status:RakutenApprovalStatus; sync_enabled:boolean; search_keyword:string|null; language:RakutenLanguage; max_results:number; max_pages:number; sync_interval_minutes:number };
-export type SupplierRakutenConfig = Omit<SupplierRakutenConfigInput,"advertiser_mid"> & { configured:boolean; id:string|null; supplier_id:string; advertiser_mid:number|null; approved_at:string|null; can_sync:boolean; blocked_reasons:string[]; created_at:string|null; updated_at:string|null };
+export type SupplierRakutenConfig = Omit<SupplierRakutenConfigInput,"advertiser_mid"> & { configured:boolean; id:string|null; supplier_id:string; advertiser_mid:number|null; approved_at:string|null; can_sync:boolean; blocked_reasons:string[]; can_preview:boolean; preview_blocked_reasons:string[]; created_at:string|null; updated_at:string|null };
+export type RakutenPreviewProduct = { advertiser_id:number; advertiser_name:string; link_id:string; sku:string|null; name:string; price:string; currency:string; product_url:string; image_url:string|null; primary_category:string|null; secondary_category:string|null; short_description:string|null };
+export type RakutenPreview = { supplier_id:string; advertiser_mid:number; page_number:number; total_pages:number; total_matches:number; fetched_at:string; persisted:false; items:RakutenPreviewProduct[] };
 
 export type EvidenceType = "terms" | "robots" | "vat" | "shipping" | "official_api" | "buyma" | "ingestion" | "resale_restriction" | "other";
 export type EvidenceResult = "allowed" | "restricted" | "prohibited" | "disallowed" | "supported" | "unsupported" | "confirmed" | "unconfirmed" | "unknown" | "unchecked" | "caution" | "included" | "excluded_for_export" | "not_refunded" | "manual" | "url_manual" | "csv" | "official_api" | "structured_data" | "html_parser" | "disabled";

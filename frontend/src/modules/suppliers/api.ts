@@ -1,5 +1,5 @@
 import { apiClient } from "../../lib/api";
-import type { PolicyEvidenceSummary, Supplier, SupplierInput, SupplierPage, SupplierPolicyEvidence, SupplierPolicyEvidenceInput, SupplierPolicyEvidencePage, SupplierQuery, SupplierRakutenConfig, SupplierRakutenConfigInput } from "./types";
+import type { PolicyEvidenceSummary, RakutenPreview, Supplier, SupplierInput, SupplierPage, SupplierPolicyEvidence, SupplierPolicyEvidenceInput, SupplierPolicyEvidencePage, SupplierQuery, SupplierRakutenConfig, SupplierRakutenConfigInput } from "./types";
 
 const qs = (q: Record<string, unknown>) => { const p=new URLSearchParams(); Object.entries(q).forEach(([k,v])=>{if(v!==undefined&&v!=="")p.set(k,String(v));}); return p.toString(); };
 export const fetchSuppliers = (q: SupplierQuery = {}) => apiClient.get<SupplierPage>(`/suppliers?${qs(q)}`);
@@ -13,3 +13,4 @@ export const createPolicyEvidence = (supplierId:string,body:SupplierPolicyEviden
 export const fetchSupplierRakutenConfig = (supplierId:string) => apiClient.get<SupplierRakutenConfig>(`/suppliers/${supplierId}/rakuten-config`);
 export const saveSupplierRakutenConfig = (supplierId:string,body:SupplierRakutenConfigInput) => apiClient.put<SupplierRakutenConfig,SupplierRakutenConfigInput>(`/suppliers/${supplierId}/rakuten-config`,body);
 export const deleteSupplierRakutenConfig = (supplierId:string) => apiClient.delete<SupplierRakutenConfig>(`/suppliers/${supplierId}/rakuten-config`);
+export const previewSupplierRakutenProducts = (supplierId:string,pageNumber=1) => apiClient.post<RakutenPreview,{page_number:number}>(`/suppliers/${supplierId}/rakuten-preview`,{page_number:pageNumber});

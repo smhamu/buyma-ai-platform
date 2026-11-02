@@ -20,6 +20,8 @@ Administrators can store a Mytheresa advertiser MID and synchronization limits f
 
 Synchronization remains blocked unless every gate is satisfied: advertiser status is `approved`, the integration switch is enabled, the Supplier is active, automated fetching is enabled, the ingestion source is `official_api`, official API availability is confirmed, terms status is `allowed`, and the Rakuten API token is configured. Database constraints also prohibit enabling synchronization for an unapproved advertiser. Saving or deleting this configuration never calls Rakuten and no scheduler consumes it yet.
 
+After approval, administrators can request one read-only preview page with `POST /suppliers/{supplier_id}/rakuten-preview`. Preview requires the token, advertiser approval, and all Supplier policy gates, but does not require scheduled synchronization to be enabled. Page size, page limit, language, keyword, and advertiser MID come only from the saved configuration. The response explicitly reports `persisted=false`; neither source products nor research candidates are written. Tests use mocked Rakuten responses and never call the live API.
+
 Implemented safeguards:
 
 - fixed HTTPS endpoint with environment proxies disabled;
